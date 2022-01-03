@@ -1,4 +1,4 @@
-FROM ann-benchmarks
+FROM kernel-matrix-benchmarks
 
 RUN pip3 install scipy
 RUN python3 -c 'import scipy'
