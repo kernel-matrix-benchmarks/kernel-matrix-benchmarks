@@ -4,14 +4,14 @@ import sys
 from enum import Enum
 from shlex import split
 
-from ann_benchmarks.data import type_info
-from ann_benchmarks.distance import metrics
-from ann_benchmarks.algorithms.bruteforce import BruteForce, BruteForceBLAS
+from kernel_matrix_benchmarks.data import type_info
+from kernel_matrix_benchmarks.distance import metrics
+from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForce, BruteForceBLAS
 
 
 class QueryMode(Enum):
-    NORMAL = 0,
-    PREPARED = 1,
+    NORMAL = (0,)
+    PREPARED = (1,)
     BATCH = 2
 
 
@@ -24,11 +24,11 @@ def print(*args, **kwargs):
 
 
 def next_line():
-    for line in iter(sys.stdin.readline, ''):
+    for line in iter(sys.stdin.readline, ""):
         yield split(line.strip())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     point_type = None
     distance = None
     query_mode = QueryMode.NORMAL
@@ -53,22 +53,20 @@ if __name__ == '__main__':
                 else:
                     print("epbprtv0 fail")
             elif var == "fast":
-                fast = (val == "1")
+                fast = val == "1"
                 print("epbprtv0 ok")
             else:
                 print("epbprtv0 fail")
         elif len(line) == 3 and line[0] == "frontend":
             var, val = line[1], line[2]
             if var == "prepared-queries":
-                query_mode = \
-                    QueryMode.PREPARED if val == "1" else QueryMode.NORMAL
+                query_mode = QueryMode.PREPARED if val == "1" else QueryMode.NORMAL
                 print("epbprtv0 ok")
             elif var == "batch-queries":
-                query_mode = \
-                    QueryMode.BATCH if val == "1" else QueryMode.NORMAL
+                query_mode = QueryMode.BATCH if val == "1" else QueryMode.NORMAL
                 print("epbprtv0 ok")
             elif var == "query-parameters":
-                query_parameters = (val == "1")
+                query_parameters = val == "1"
                 print("epbprtv0 ok")
             else:
                 print("epbprtv0 fail")
@@ -122,8 +120,7 @@ if __name__ == '__main__':
         for line in next_line():
             if not line:
                 break
-            elif query_parameters and line[0] == "query-params" \
-                    and line[-1] == "set":
+            elif query_parameters and line[0] == "query-params" and line[-1] == "set":
                 _query_parameters(line)
             elif len(line) == 2:
                 try:
@@ -147,8 +144,7 @@ if __name__ == '__main__':
         for line in next_line():
             if not line:
                 break
-            elif query_parameters and line[0] == "query-params" \
-                    and line[-1] == "set":
+            elif query_parameters and line[0] == "query-params" and line[-1] == "set":
                 _query_parameters(line)
             elif line == ["query"]:
                 if parsed and k:
@@ -176,8 +172,7 @@ if __name__ == '__main__':
         for line in next_line():
             if not line:
                 break
-            elif query_parameters and line[0] == "query-params" \
-                    and line[-1] == "set":
+            elif query_parameters and line[0] == "query-params" and line[-1] == "set":
                 _query_parameters(line)
             elif line == ["query"]:
                 if parsed and k:

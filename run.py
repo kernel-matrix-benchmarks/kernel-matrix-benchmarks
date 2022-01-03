@@ -1,4 +1,4 @@
-from ann_benchmarks.main import main
+from kernel_matrix_benchmarks.main import main
 from multiprocessing import freeze_support
 
 if __name__ == "__main__":
