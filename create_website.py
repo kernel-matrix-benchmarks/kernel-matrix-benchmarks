@@ -133,7 +133,7 @@ args = parser.parse_args()
 
 
 def get_lines(all_data, xn, yn, render_all_points):
-    """ For each algorithm run on a dataset, obtain its performance
+    """For each algorithm run on a dataset, obtain its performance
     curve coords."""
     plot_data = []
     for algo in sorted(all_data.keys(), key=lambda x: x.lower()):
@@ -262,7 +262,7 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
     with open(args.outputdir + "index.html", "w") as text_file:
         text_file.write(
             j2_env.get_template("summary.html").render(
-                title="ANN-Benchmarks",
+                title="Kernel-Matrix-Benchmarks",
                 dataset_with_distances=dataset_data,
                 algorithms=algorithms,
             )

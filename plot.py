@@ -23,6 +23,11 @@ from kernel_matrix_benchmarks.results import (
 
 
 def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, batch):
+    """Creates a .png file and save it at location 'fn_out'.
+    
+    This routine is called using the command line, thanks to the API
+    that is defined at the end of this file.
+    """
     xm, ym = (metrics[xn], metrics[yn])
     # Now generate each plot
     handles = []

@@ -7,6 +7,7 @@ from kernel_matrix_benchmarks.main import positive_int
 
 
 def build(library, args):
+    """Builds a library using the relevant Dockerfile in the 'install/' folder."""
     print("Building %s..." % library)
     if args is not None and len(args) != 0:
         q = " ".join(["--build-arg " + x.replace(" ", "\\ ") for x in args])
@@ -15,7 +16,7 @@ def build(library, args):
 
     try:
         subprocess.check_call(
-            "docker build %s --rm -t ann-benchmarks-%s -f"
+            "docker build %s --rm -t kernel-matrix-benchmarks-%s -f"
             " install/Dockerfile.%s ." % (q, library, library),
             shell=True,
         )
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     print("Building base image...")
     subprocess.check_call(
         "docker build \
-        --rm -t ann-benchmarks -f install/Dockerfile .",
+        --rm -t kernel-matrix-benchmarks -f install/Dockerfile .",
         shell=True,
     )
 
