@@ -11,6 +11,8 @@ data/*
 
 *.log
 
+.vscode/
+
 results/*
 !results/*.png
 
