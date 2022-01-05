@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/kernel-matrix-benchmarks/kernel-matrix-benchmarks/kernel%20matrix%20benchmarks?style=flat-square)](https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/actions?query=workflow:benchmarks)
 
-Computations with kernel matrices are a key bottleneck in many applied fields - from numerical physics to machine learning.
+Computations with kernel matrices are a key bottleneck in many applied fields -- from numerical physics to machine learning.
 This website compares acceleration methods for these problems in an objective way.
 
 Specifically, we are interested in...
@@ -57,9 +57,10 @@ Interactive plots can be found at <http://kernel-matrix-benchmarks.com>. These a
 
 The only prerequisite is Python (tested with 3.6) and Docker.
 
-1. Clone the repo.
-2. Run `pip install -r requirements.txt`.
-3. Run `python install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
+1. Clone the repo (`git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git`).
+2. Enter the main directory (`cd kernel-matrix-benchmarks`).
+3. Run `pip install -r requirements.txt`.
+4. Run `python install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
 
 ## Running
 
@@ -69,7 +70,7 @@ The only prerequisite is Python (tested with 3.6) and Docker.
 You can customize the algorithms and datasets if you want to:
 
 - Check that `algos.yaml` contains the parameter settings that you want to test
-- To run experiments on SIFT, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
+- To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
 - To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
 
 ## Including your algorithm
@@ -81,15 +82,19 @@ You can customize the algorithms and datasets if you want to:
 
 ## Principles
 
+Open science:
+
 - Everyone is welcome to submit pull requests with tweaks and changes to how each library is being used.
-- In particular: if you are the author of any of these libraries, and you think the benchmark can be improved, consider making the improvement and submitting a pull request.
-- This is meant to be an ongoing project and represent the current state.
-- Make everything easy to replicate, including installing and preparing the datasets.
-- Try many different values of parameters for each library and ignore the points that are not on the precision-performance frontier.
-- Challenging datasets from varied fields that rely on kernel computations.
+- In particular: if you are the author of one of these libraries and you think that the benchmark can be improved, please consider submitting a pull request.
+- This is meant to be an ongoing project and represent the current state-of-the-art.
+- Make everything easy to replicate, including the installation of the libraries and the data pre-processing.
+
+Diverse use cases:
+
+- Showcase challenging datasets from all fields that rely on kernel computations.
 - Benchmark both pre-computation and query times.
-- Focus on datasets that fit in RAM.
 - Support both CPU and GPU implementations.
+- Try many different values of parameters for each library -- and ignore the points that are not on the [precision-performance frontier](https://en.wikipedia.org/wiki/Pareto_front).
 
 ## Authors
 
@@ -100,7 +105,7 @@ We rely heavily on the template of the [ANN-benchmarks](https://github.com/erikb
 ## Related Publications
 
 We will document our framework and results with a publication in due time.
-Meanwhile, the following publication details design principles behind the ANN-benchmark framework:
+Meanwhile, the following paper details design principles behind the ANN-benchmark framework:
 
 - M. Aumüller, E. Bernhardsson, A. Faithfull:
 [ANN-Benchmarks: A Benchmarking Tool for Approximate Nearest Neighbor Algorithms](https://arxiv.org/abs/1807.05614). Information Systems 2019. DOI: [10.1016/j.is.2019.02.006](https://doi.org/10.1016/j.is.2019.02.006)

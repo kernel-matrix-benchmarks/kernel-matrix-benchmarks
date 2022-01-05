@@ -176,11 +176,7 @@ function""" % (
 
 def run_from_cmdline():
     parser = argparse.ArgumentParser(
-        """
-
-            NOTICE: You probably want to run.py rather than this script.
-
-"""
+        """NOTICE: You probably want to run.py rather than this script."""
     )
     parser.add_argument(
         "--dataset",

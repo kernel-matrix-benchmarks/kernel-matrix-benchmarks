@@ -30,6 +30,9 @@ def build_multiprocess(args):
 
 
 if __name__ == "__main__":
+
+    # This script is normally used with "python install.py"
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -50,6 +53,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    # Step 1: the "master" image is 'install/Dockerfile'
     print("Building base image...")
     subprocess.check_call(
         "docker build \
@@ -57,17 +61,22 @@ if __name__ == "__main__":
         shell=True,
     )
 
+    # Step 2: identify the Dockerfiles that the user is interested in
     if args.algorithm:
+        # Case 1: the user is interested in a single algorithm
         tags = [args.algorithm]
     elif os.getenv("LIBRARY"):
+        # Case 2: the user has specified the algorithm with an environment variable
         tags = [os.getenv("LIBRARY")]
     else:
+        # Default case: all the Dockerfiles in the 'install/' folder
         tags = [
             fn.split(".")[-1]
             for fn in os.listdir("install")
             if fn.startswith("Dockerfile.")
         ]
 
+    # Step 3: setup all the Docker images, possibly in parallel
     print("Building algorithm images... with (%d) processes" % args.proc)
 
     if args.proc == 1:
