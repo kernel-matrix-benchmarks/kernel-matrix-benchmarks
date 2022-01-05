@@ -25,6 +25,14 @@ Definition = collections.namedtuple(
 
 
 def instantiate_algorithm(definition):
+    """Loads a library and creates the module specified by the experiment definition.
+
+    Args:
+        definition (Definition): A namedtuple that describes a method to benchmark.
+
+    Returns:
+        A python object that answers numerical queries.
+    """
     print(
         "Trying to instantiate %s.%s(%s)"
         % (definition.module, definition.constructor, definition.arguments)
@@ -52,6 +60,8 @@ def algorithm_status(definition):
 
 
 def _generate_combinations(args):
+    """Returns the Cartesian product of a list/dict of lists."""
+
     if isinstance(args, list):
         args = [el if isinstance(el, list) else [el] for el in args]
         return [list(x) for x in product(*args)]
@@ -112,26 +122,55 @@ def get_definitions(
     distance_metric="euclidean",
     count=10,
 ):
+    # Step 1: Load the .yaml file --------------------------
+    # Load "algos.yaml" using the standard .yaml parser:
     definitions = _get_definitions(definition_file)
 
     algorithm_definitions = {}
+
+    # Load the algorithms that support "any" metric:
     if "any" in definitions[point_type]:
         algorithm_definitions.update(definitions[point_type]["any"])
+
+    # And add the algorithms that "only" support the target metric:
     algorithm_definitions.update(definitions[point_type][distance_metric])
 
+    # Step 2: Process the experiments/libraries ---------------------
     definitions = []
     for (name, algo) in algorithm_definitions.items():
+
+        # Step 2.a: Check that each algorithm is defined by:
+        # - a docker image
+        # - a python module (i.e. a python file)
+        # - a python constructor (i.e. a python class)
         for k in ["docker-tag", "module", "constructor"]:
             if k not in algo:
                 raise Exception(
                     'algorithm %s does not define a "%s" property' % (name, k)
                 )
 
+        # Step 2.b: Load the "basic arguments" such as the kernel type
+        # that will be needed by all "children" experiments.
         base_args = []
         if "base-args" in algo:
             base_args = algo["base-args"]
 
+        # Step 2.c: Loop over the "run groups" that define
+        # several ways of using the same python constructor.
         for run_group in algo["run-groups"].values():
+
+            # Step 2.d: Expand the lists of arguments into a long list
+            # of possible configurations for the python constructor.
+            #
+            # N.B.: "_generate_combinations" generates Cartesian products
+            # of a list/dict of lists, so that:
+            # _generate_combinations([[0, 1], [2, 3]])
+            #   = [[0,2], [0,3], [1,2], [1,3]]
+            # and
+            # _generate_combinations({"A" : [0, 1], "B" : [2, 3]})
+            #   = [{"A":0, "B":2}, ..., {"A":1, "B":3}]
+
+            # Case 1 - heavy: The group defines several groups of args.
             if "arg-groups" in run_group:
                 groups = []
                 for arg_group in run_group["arg-groups"]:
@@ -143,11 +182,14 @@ def get_definitions(
                     else:
                         groups.append(arg_group)
                 args = _generate_combinations(groups)
+            # Case 2 - simpler: The group is associated to a list of args.
             elif "args" in run_group:
                 args = _generate_combinations(run_group["args"])
+            # Case 3 - error: the group has not defined any arguments.
             else:
                 assert False, "? what? %s" % run_group
 
+            # Step 2.e: We do the same thing for the arguments "at query time".
             if "query-arg-groups" in run_group:
                 groups = []
                 for arg_group in run_group["query-arg-groups"]:
@@ -161,7 +203,13 @@ def get_definitions(
             else:
                 query_args = []
 
+            # Step 2.f: Turn these lists of arguments into full, self-contained
+            # descriptions of our experiments.
             for arg_group in args:
+
+                # Concatenate the "constant" and "variable" parameters,
+                # i.e. "aargs = base_args + arg_group", with careful handling of
+                # lists and "singleton" parameters.
                 aargs = []
                 aargs.extend(base_args)
                 if isinstance(arg_group, list):
@@ -169,12 +217,15 @@ def get_definitions(
                 else:
                     aargs.append(arg_group)
 
+                # Magic keywords:
                 vs = {
-                    "@count": count,
+                    "@count": count,  # !!! We should replace this !!!
                     "@metric": distance_metric,
                     "@dimension": dimension,
                 }
                 aargs = [_substitute_variables(arg, vs) for arg in aargs]
+
+                # The final definition object - a namedtuple:
                 definitions.append(
                     Definition(
                         algorithm=name,

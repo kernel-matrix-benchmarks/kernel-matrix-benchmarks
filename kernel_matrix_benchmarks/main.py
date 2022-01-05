@@ -25,6 +25,7 @@ from kernel_matrix_benchmarks.runner import run, run_docker
 
 
 def positive_int(s):
+    """Converts the input to an integer, raises an exception if it is <= 0."""
     i = None
     try:
         i = int(s)
@@ -36,12 +37,28 @@ def positive_int(s):
 
 
 def run_worker(cpu, args, queue):
+    """Runs all the jobs in the queue, possibly using Docker.
+
+    Args:
+        cpu (int): the max number of CPUs that should run the job.
+        args (parsed arguments): the arguments given by the user when typing
+            `python run.py --arguments...`
+        queue (multiprocessing Queue): methods asked by the user.
+    """
+
     while not queue.empty():
+
+        # Definitions are instantiated at the end of this script.
         definition = queue.get()
+
         if args.local:
+            # Case 1: the user does not want to bother with Docker,
+            #    e.g. when writing and testing a pull request on a local machine.
             run(definition, args.dataset, args.count, args.runs, args.batch)
+
         else:
-            memory_margin = 500e6  # reserve some extra memory for misc stuff
+            # Case 2: the user is using Docker, e.g. when rendering the website.
+            memory_margin = 500e6  # reserve some extra memory (~500 Mb) for misc stuff
             mem_limit = int(
                 (psutil.virtual_memory().available - memory_margin) / args.parallelism
             )
@@ -62,6 +79,9 @@ def run_worker(cpu, args, queue):
 
 
 def main():
+
+    # This function is called when the user types `python run.py --arguments...`
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -72,7 +92,7 @@ def main():
         default="glove-100-angular",
         choices=DATASETS.keys(),
     )
-    parser.add_argument(
+    parser.add_argument(  # !!! We should remove this argument !!!
         "-k",
         "--count",
         default=10,
@@ -125,7 +145,7 @@ def main():
         help="If set, then will run everything locally (inside the same "
         "process) rather than using Docker",
     )
-    parser.add_argument(
+    parser.add_argument(  # !!! We should remove this argument !!!
         "--batch",
         action="store_true",
         help="If set, algorithms get all queries at once",
@@ -153,20 +173,28 @@ def main():
         args.timeout = None
 
     if args.list_algorithms:
+        # `python run.py --list-algorithms`
+        # -> We just display all the possible algorithms and exit.
         list_algorithms(args.definitions)
         sys.exit(0)
 
     logging.config.fileConfig("logging.conf")
-    logger = logging.getLogger("annb")
+    logger = logging.getLogger("kmb")
 
     # Nmslib specific code
     # Remove old indices stored on disk
     if os.path.exists(INDEX_DIR):
         shutil.rmtree(INDEX_DIR)
 
+    # Load the dataset:
     dataset, dimension = get_dataset(args.dataset)
-    point_type = dataset.attrs.get("point_type", "float")
-    distance = dataset.attrs["distance"]
+
+    # Properties of the dataset:
+    point_type = dataset.attrs.get("point_type", "float")  # "float", "binary", etc.?
+    distance = dataset.attrs["distance"]  # !!! we will replace this with kernel ???
+
+    # Definition of the input problem.
+    # These correspond to the experiments listed in algos.yaml
     definitions = get_definitions(
         args.definitions, dimension, point_type, distance, args.count
     )
@@ -177,28 +205,46 @@ def main():
     # comprehension.)
     filtered_definitions = []
     for definition in definitions:
+
+        # N.B.: Most experiments do not define a "query-arg-groups".
         query_argument_groups = definition.query_argument_groups
         if not query_argument_groups:
             query_argument_groups = [[]]
+
+        # Filter out, for this specific "definition" (i.e. Python object + parameters)
+        # what are the arguments "at query time" that have already been tried.
         not_yet_run = []
         for query_arguments in query_argument_groups:
+            # The result filename looks like
+            # "results/dataset/algorithm/M_4_L_0_5.hdf5"
             fn = get_result_filename(
                 args.dataset, args.count, definition, query_arguments, args.batch
             )
             if args.force or not os.path.exists(fn):
                 not_yet_run.append(query_arguments)
-        if not_yet_run:
+
+        if not_yet_run:  # ...is not empty, i.e. some experiments remain to be run:
             if definition.query_argument_groups:
                 definition = definition._replace(query_argument_groups=not_yet_run)
             filtered_definitions.append(definition)
+
+    # "definitions" is a list of "experiment definitions" whose results do not
+    # already appear on the hard drive.
     definitions = filtered_definitions
 
+    # N.B.: We shuffle all the experiments. This could help us to avoid
+    # unnecessary bias against e.g. the last experiments in "algos.yaml",
+    # since some GPUs may overheat and experience a sharp decline in performance
+    # after several hours of continuous work.
     random.shuffle(definitions)
 
+    # If the user has specified a single algorithm,
+    # we filter out all the other experiments:
     if args.algorithm:
         logger.info(f"running only {args.algorithm}")
         definitions = [d for d in definitions if d.algorithm == args.algorithm]
 
+    # Case 1: The user is working with Docker, i.e. "not on the local machine".
     if not args.local:
         # See which Docker images we have available
         docker_client = docker.from_env()
@@ -208,10 +254,14 @@ def main():
                 tag = tag.split(":")[0]
                 docker_tags.add(tag)
 
+        # If the user has specified a single Docker image,
+        # we filter out all the other experiments:
         if args.docker_tag:
             logger.info(f"running only {args.docker_tag}")
             definitions = [d for d in definitions if d.docker_tag == args.docker_tag]
 
+        # If some docker images are referenced in "algos.yaml" but cannot
+        # be found in the docker environment, we add a warning in the log file:
         if set(d.docker_tag for d in definitions).difference(docker_tags):
             logger.info(f"not all docker images available, only: {set(docker_tags)}")
             logger.info(
@@ -219,8 +269,12 @@ def main():
                 f"{str(set(d.docker_tag for d in definitions).difference(docker_tags))}"
             )
             definitions = [d for d in definitions if d.docker_tag in docker_tags]
+
+    # Case 2: The user is working without Docker, i.e. "on the local machine".
     else:
 
+        # Check that all the modules referenced in "algos.yaml" can actually
+        # be loaded.
         def _test(df):
             status = algorithm_status(df)
             # If the module was loaded but doesn't actually have a constructor
@@ -245,8 +299,10 @@ def main():
             else:
                 return True
 
+        # Keep the modules that can be loaded:
         definitions = [d for d in definitions if _test(d)]
 
+    # Discard the methods with flag "disabled: false"
     if not args.run_disabled:
         if len([d for d in definitions if d.disabled]):
             logger.info(
@@ -254,6 +310,7 @@ def main():
             )
         definitions = [d for d in definitions if not d.disabled]
 
+    #  For debugging, the user may wish to only run the first "n" methods:
     if args.max_n_algorithms >= 0:
         definitions = definitions[: args.max_n_algorithms]
 
@@ -262,6 +319,9 @@ def main():
     else:
         logger.info(f"Order: {definitions}")
 
+    # args.parallelism specifies the number of tests that we may run in parallel,
+    # in single-thread mode.
+    # In practice, I don't think that this will be used by default.
     if args.parallelism > multiprocessing.cpu_count() - 1:
         raise Exception(
             "Parallelism larger than %d! (CPU count minus one)"
@@ -272,6 +332,8 @@ def main():
     queue = multiprocessing.Queue()
     for definition in definitions:
         queue.put(definition)
+
+    # Note that args.batch will be true most of the time:
     if args.batch and args.parallelism > 1:
         raise Exception(
             f"Batch mode uses all available CPU resources, --parallelism should be set to 1. (Was: {args.parallelism})"

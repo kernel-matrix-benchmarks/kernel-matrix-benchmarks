@@ -13,11 +13,14 @@ def get_result_filename(
     d = ["results"]
     if dataset:
         d.append(dataset)
-    if count:
+    if count:  # !!! "count" is obsolete, a k-nn only variable !!!
+        # We could replace it with "kernel"
         d.append(str(count))
     if definition:
         d.append(definition.algorithm + ("-batch" if batch_mode else ""))
         data = definition.arguments + query_arguments
+        # The filename is a "flat" expansion of the dict of parameters,
+        # with all "non alphanumerical symbols" replaced by "_".
         d.append(
             re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".hdf5"
         )

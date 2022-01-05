@@ -113,7 +113,11 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
 
 
 def run(definition, dataset, count, run_count, batch):
+    """Runs a method "run_count" times."""
+
     algo = instantiate_algorithm(definition)
+
+    # Does the algorithm support setting custom arguments for queries?
     assert not definition.query_argument_groups or hasattr(
         algo, "set_query_arguments"
     ), """\
@@ -125,6 +129,7 @@ function""" % (
         definition.arguments,
     )
 
+    # Load the input data:
     D, dimension = get_dataset(dataset)
     X_train = numpy.array(D["train"])
     X_test = numpy.array(D["test"])
@@ -132,13 +137,16 @@ function""" % (
     print("got a train set of size (%d * %d)" % (X_train.shape[0], dimension))
     print("got %d queries" % len(X_test))
 
+    # Dense or sparse NumPy arrays:
     X_train, X_test = dataset_transform(D)
 
+    # We run our algorithm in a try-catch structure:
     try:
         prepared_queries = False
         if hasattr(algo, "supports_prepared_queries"):
             prepared_queries = algo.supports_prepared_queries()
 
+        # Step 1: Pre-computation, benchmarked both for time and memory usage.
         t0 = time.time()
         memory_usage_before = algo.get_memory_usage()
         algo.fit(X_train)
@@ -147,6 +155,8 @@ function""" % (
         print("Built index in", build_time)
         print("Index size: ", index_size)
 
+        # Step 2: We may run the same "trained" algorithm with different parameters
+        # "at query" time.
         query_argument_groups = definition.query_argument_groups
         # Make sure that algorithms with no query argument groups still get run
         # once by providing them with a single, empty, harmless group
@@ -158,8 +168,10 @@ function""" % (
                 "Running query argument group %d of %d..."
                 % (pos, len(query_argument_groups))
             )
-            if query_arguments:
+            if query_arguments:  # ...is not empty:
                 algo.set_query_arguments(*query_arguments)
+
+            # Perform the computation "for X_test and X_train"
             descriptor, results = run_individual_query(
                 algo, X_train, X_test, distance, count, run_count, batch
             )
@@ -167,6 +179,10 @@ function""" % (
             descriptor["index_size"] = index_size
             descriptor["algo"] = definition.algorithm
             descriptor["dataset"] = dataset
+
+            # Store the raw output of the algorithm.
+            # Evaluation metrics are not computed here, but in the
+            # ulterior rendering pass (e.g. for the website).
             store_results(
                 dataset, count, definition, query_arguments, descriptor, results, batch
             )
@@ -176,7 +192,7 @@ function""" % (
 
 def run_from_cmdline():
     parser = argparse.ArgumentParser(
-        """NOTICE: You probably want to run.py rather than this script."""
+        """NOTICE: You probably want to use run.py rather than this script."""
     )
     parser.add_argument(
         "--dataset",
@@ -189,7 +205,7 @@ def run_from_cmdline():
     )
     parser.add_argument(
         "--module",
-        help='Python module containing algorithm. E.g. "ann_benchmarks.algorithms.annoy"',
+        help='Python module containing algorithm. E.g. "kernel_matrix_benchmarks.algorithms.annoy"',
         required=True,
     )
     parser.add_argument(
@@ -255,24 +271,32 @@ def run_docker(
         definition.constructor,
         "--runs",
         str(runs),
-        "--count",
+        "--count",  #  !!! count is obsolete
         str(count),
     ]
+
+    # "batch mode" will be set to true most of the time:
     if batch:
         cmd += ["--batch"]
+
+    # Arguments of the "constructor":
     cmd.append(json.dumps(definition.arguments))
+    # Arguments at query time (for a fixed constructor):
     cmd += [json.dumps(qag) for qag in definition.query_argument_groups]
 
+    # Wake-up Docker:
     client = docker.from_env()
     if mem_limit is None:
         mem_limit = psutil.virtual_memory().available
 
+    # Run our command:
+    # N.B.: We expect the user to be called "app", not e.g. "jean" or "ubuntu".
     container = client.containers.run(
         definition.docker_tag,
         cmd,
         volumes={
-            os.path.abspath("ann_benchmarks"): {
-                "bind": "/home/app/ann_benchmarks",
+            os.path.abspath("kernel_matrix_benchmarks"): {
+                "bind": "/home/app/kernel_matrix_benchmarks",
                 "mode": "ro",
             },
             os.path.abspath("data"): {"bind": "/home/app/data", "mode": "ro"},
@@ -282,7 +306,8 @@ def run_docker(
         mem_limit=mem_limit,
         detach=True,
     )
-    logger = logging.getLogger(f"annb.{container.short_id}")
+    # kmb = Kernel Matrix Benchmarks
+    logger = logging.getLogger(f"kmb.{container.short_id}")
 
     logger.info(
         "Created container %s: CPU limit %s, mem limit %s, timeout %d, command %s"

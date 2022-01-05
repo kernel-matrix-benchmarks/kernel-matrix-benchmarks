@@ -1,5 +1,8 @@
-float:
-  any:
+# This file is processed in kernel_matrix_benchmarks/algorithms/definitions.py
+# by the routine "get_definitions(...)"
+
+float: # Point coordinates = vectors of floats
+  any: # Any metric
     # Full syntax example:
     nicelibrary:
       disabled: true
