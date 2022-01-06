@@ -10,6 +10,7 @@ import traceback
 def get_result_filename(
     dataset=None, count=None, definition=None, query_arguments=None, batch_mode=False
 ):
+    """Creates a filename thatlookss like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
     d = ["results"]
     if dataset:
         d.append(dataset)
@@ -28,13 +29,31 @@ def get_result_filename(
 
 
 def store_results(dataset, count, definition, query_arguments, attrs, results, batch):
+    """Stores the raw output of a computation."""
+
+    # The result filename looks like
+    # "results/dataset/algorithm/M_4_L_0_5.hdf5"
     fn = get_result_filename(dataset, count, definition, query_arguments, batch)
+
+    # Creates the folder "results/dataset/algorithm/":
     head, tail = os.path.split(fn)
     if not os.path.isdir(head):
         os.makedirs(head)
+
+    # Creates the file "M_4_L_0_5.hdf5":
     f = h5py.File(fn, "w")
+
+    # attrs is a dictionary with keys:
+    # "build_time", "index_size", "algo", "dataset",
+    # "batch_mode", "best_search_time", "candidates",
+    # "expect_extra", "name", "run_count", "count" (obsolete)
+    # and algorithm-specific "extras".
+    # All of this is saved in the hdf5 file.
     for k, v in attrs.items():
         f.attrs[k] = v
+
+    # Stores the entries of the result with their computation times:
+    # !!! Currently, this method is ANN-specific
     times = f.create_dataset("times", (len(results),), "f")
     neighbors = f.create_dataset("neighbors", (len(results), count), "i")
     distances = f.create_dataset("distances", (len(results), count), "f")
@@ -46,6 +65,7 @@ def store_results(dataset, count, definition, query_arguments, attrs, results, b
 
 
 def load_all_results(dataset=None, count=None, batch_mode=False):
+    """Python iterator that returns all the "results" hdf5 files with the correct attributes."""
     for root, _, files in os.walk(get_result_filename(dataset, count)):
         for fn in files:
             if os.path.splitext(fn)[-1] != ".hdf5":
@@ -54,7 +74,10 @@ def load_all_results(dataset=None, count=None, batch_mode=False):
                 f = h5py.File(os.path.join(root, fn), "r+")
                 properties = dict(f.attrs)
                 if batch_mode != properties["batch_mode"]:
+                    # "continue" -> skip to the next file
                     continue
+
+                # "yield" = "return", but for iterators
                 yield properties, f
                 f.close()
             except:

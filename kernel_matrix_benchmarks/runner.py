@@ -21,10 +21,15 @@ from kernel_matrix_benchmarks.results import store_results
 
 
 def run_individual_query(algo, X_train, X_test, distance, count, run_count, batch):
+    """Performs an actual computation to benchmark!"""
+
+    # To ensure a fair benchmark, we may need to reformat queries
+    # before launching the timer, e.g. to load them on the GPU or change the input format:
     prepared_queries = (batch and hasattr(algo, "prepare_batch_query")) or (
         (not batch) and hasattr(algo, "prepare_query")
     )
 
+    # We try an experiment "run_count" times and keep the best run time:
     best_search_time = float("inf")
     for i in range(run_count):
         print("Run %d/%d..." % (i + 1, run_count))
@@ -32,16 +37,29 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         n_items_processed = [0]
 
         def single_query(v):
+            """Performs the computation, one query point at a time."""
             if prepared_queries:
+                # Load queries on the GPU, etc.
                 algo.prepare_query(v, count)
+
+                # Actual benchmark!
                 start = time.time()
                 algo.run_prepared_query()
                 total = time.time() - start
+
+                # Retrieve the output as a NumPy array.
+                # The algorithm may unload the output form the GPU, etc.:
                 candidates = algo.get_prepared_query_results()
             else:
+                # For simple NumPy-compatible algorithms,
+                # there is no need to pre- and post-process the queries
+                # outside of the timer "to ensure a fair comparison".
                 start = time.time()
                 candidates = algo.query(v, count)
                 total = time.time() - start
+
+            # Compute the distance between each query point and each possible output:
+            # !!! This is obsolete for kernel matrix benchmarks.
             candidates = [
                 (
                     int(idx),
@@ -54,6 +72,8 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
                 print(
                     "Processed %d/%d queries..." % (n_items_processed[0], len(X_test))
                 )
+
+            # !!! count-related code is obsolete
             if len(candidates) > count:
                 print(
                     "warning: algorithm %s returned %d results, but count"
@@ -62,16 +82,28 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
             return (total, candidates)
 
         def batch_query(X):
+            """Performs the computation with all queries "simultaneously"."""
+
             if prepared_queries:
+                # Load queries on the GPU, etc.
+                # !!! count-related code is obsolete
                 algo.prepare_batch_query(X, count)
+
+                # Actual benchmark!
                 start = time.time()
                 algo.run_batch_query()
                 total = time.time() - start
             else:
                 start = time.time()
+                # !!! count-related code is obsolete
                 algo.batch_query(X, count)
                 total = time.time() - start
+
+            # Unload the output from the GPU, etc.
             results = algo.get_batch_results()
+
+            # Compute the distance between each query point and each possible output:
+            # !!! This is obsolete for kernel matrix benchmarks.
             candidates = [
                 [
                     (
@@ -82,6 +114,8 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
                 ]
                 for v, single_results in zip(X, results)
             ]
+            # Each query of the batch "receives" a fraction of the total
+            # compute time:
             return [(total / float(len(X)), v) for v in candidates]
 
         if batch:
@@ -89,12 +123,17 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         else:
             results = [single_query(x) for x in X_test]
 
+        # We are interested in the "minimum average search time" on the dataset:
         total_time = sum(time for time, _ in results)
-        total_candidates = sum(len(candidates) for _, candidates in results)
         search_time = total_time / len(X_test)
-        avg_candidates = total_candidates / len(X_test)
         best_search_time = min(best_search_time, search_time)
 
+        # !!! This is probably obsolete:
+        total_candidates = sum(len(candidates) for _, candidates in results)
+        avg_candidates = total_candidates / len(X_test)
+
+    # Return all types of metadata (attrs) and a list of
+    # [(time1, out1), ..., (timeN, outN)] for the N query points:
     verbose = hasattr(algo, "query_verbose")
     attrs = {
         "batch_mode": batch,
@@ -104,7 +143,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         "name": str(algo),
         "run_count": run_count,
         "distance": distance,
-        "count": int(count),
+        "count": int(count),  # !!! obsolete
     }
     additional = algo.get_additional()
     for k in additional:
@@ -171,7 +210,7 @@ function""" % (
             if query_arguments:  # ...is not empty:
                 algo.set_query_arguments(*query_arguments)
 
-            # Perform the computation "for X_test and X_train"
+            # Benchmark the computation "for X_test and X_train":
             descriptor, results = run_individual_query(
                 algo, X_train, X_test, distance, count, run_count, batch
             )
@@ -181,8 +220,6 @@ function""" % (
             descriptor["dataset"] = dataset
 
             # Store the raw output of the algorithm.
-            # Evaluation metrics are not computed here, but in the
-            # ulterior rendering pass (e.g. for the website).
             store_results(
                 dataset, count, definition, query_arguments, descriptor, results, batch
             )
@@ -191,6 +228,12 @@ function""" % (
 
 
 def run_from_cmdline():
+    """Command-Line Interface used by the Docker runner."""
+
+    # In practice, the user calls "run.py" -> "main.py" -> "run_worker(...)".
+    # If Docker is being used, "run_worker(...)" calls "run_docker(...)".
+    # The entry point for each method's Dockerfile is "run_algorithm.py",
+    # that points to this function "run_from_cmdline()"".
     parser = argparse.ArgumentParser(
         """NOTICE: You probably want to use run.py rather than this script."""
     )
@@ -213,7 +256,7 @@ def run_from_cmdline():
         help='Constructer to load from modulel. E.g. "Annoy"',
         required=True,
     )
-    parser.add_argument(
+    parser.add_argument(  #  !!! This is obsolete
         "--count",
         help="K: Number of nearest neighbours for the algorithm to return.",
         required=True,
@@ -254,12 +297,18 @@ def run_from_cmdline():
         query_argument_groups=query_args,
         disabled=False,
     )
+
+    # Presumably, we execute this command inside a Docker:
     run(definition, args.dataset, args.count, args.runs, args.batch)
 
 
 def run_docker(
     definition, dataset, count, runs, timeout, batch, cpu_limit, mem_limit=None
 ):
+    # Arguments for the entry point defined in "install/Dockerfile",
+    # the parent Docker image for all our models:
+    # `python3 -u run_algorithm.py` + the options below
+    # This links to the function "run_from_cmdline()" defined above.
     cmd = [
         "--dataset",
         dataset,
@@ -306,6 +355,8 @@ def run_docker(
         mem_limit=mem_limit,
         detach=True,
     )
+
+    # Logging:
     # kmb = Kernel Matrix Benchmarks
     logger = logging.getLogger(f"kmb.{container.short_id}")
 
@@ -321,6 +372,7 @@ def run_docker(
     t = threading.Thread(target=stream_logs, daemon=True)
     t.start()
 
+    # Launch the container, wait at most timeout seconds (2 hours by default):
     try:
         return_value = container.wait(timeout=timeout)
         _handle_container_return_value(return_value, container, logger)
@@ -334,6 +386,8 @@ def run_docker(
 
 
 def _handle_container_return_value(return_value, container, logger):
+    """Displays an error message if the Docker returned an error."""
+
     base_msg = "Child process for container %s" % (container.short_id)
     if (
         type(return_value) is dict
