@@ -12,23 +12,50 @@ def get_or_create_metrics(run):
 
 
 def create_pointset(data, xn, yn):
+    """Extracts the Pareto frontier of a set of performance metrics.
+
+    Args:
+        data (list): list of (algo, algo_name, x_value, y_value).
+            x_value and y_value are numerical performance "grades",
+            while algo_name will be used as a point label on the interactive website.
+        xn (string): name of the performance metric for the x axis.
+        yn (string): name of the performance metric for the y axis.
+
+    Returns:
+        6-uple of lists: (xs, ys, labels) that correspond to the Pareto front
+          and (all_xs, all_ys, all_labels) that correspond to all points
+          outside of the x and y axes, sorted "from best to worst" value of y.
+    """
+    # Load the relevant "metrics" functions for the x and y axes.
     xm, ym = (metrics[xn], metrics[yn])
+    # Shall we compute the Pareto frontiers "upside down"?
+    # This is typically the case for "recall" or "queries per second" metrics,
+    # but not for "errors".
     rev_y = -1 if ym["worst"] < 0 else 1
     rev_x = -1 if xm["worst"] < 0 else 1
+    # Sort the list of values according to the last two coordinates:
+    # the values "yv" (most important) and "xv" (to break ties).
     data.sort(key=lambda t: (rev_y * t[-1], rev_x * t[-2]))
 
     axs, ays, als = [], [], []
-    # Generate Pareto frontier
+    # Generate Pareto frontier:
     xs, ys, ls = [], [], []
     last_x = xm["worst"]
     comparator = (lambda xv, lx: xv > lx) if last_x < 0 else (lambda xv, lx: xv < lx)
+
+    # Loop over all points in the benchmark:
+    # We sweep "from the best values of y to the worst ones".
     for algo, algo_name, xv, yv in data:
-        if not xv or not yv:
+        if not xv or not yv:  # zero values -> skip
             continue
         axs.append(xv)
         ays.append(yv)
         als.append(algo_name)
-        if comparator(xv, last_x):
+
+        # We sweep "from the best values of y to the worst ones".
+        # Along the way, we pick up points that have "the best value of x"
+        # seen so far.
+        if comparator(xv, last_x):  # Is xv better than last_x?
             last_x = xv
             xs.append(xv)
             ys.append(yv)

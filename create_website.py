@@ -70,6 +70,7 @@ def convert_linestyle(ls):
 
 
 def get_run_desc(properties):
+    # !!! Reference to count is obsolete!
     return "%(dataset)s_%(count)d_%(distance)s" % properties
 
 
@@ -86,6 +87,7 @@ def get_distance_from_desc(desc):
 
 
 def get_dataset_label(desc):
+    # !!! Reference to count is obsolete!
     return "{} (k = {})".format(get_dataset_from_desc(desc), get_count_from_desc(desc))
 
 
@@ -134,7 +136,12 @@ args = parser.parse_args()
 
 def get_lines(all_data, xn, yn, render_all_points):
     """For each algorithm run on a dataset, obtain its performance
-    curve coords."""
+    curve coords.
+    
+    xn, yn are string identifiers for performance metrics,
+    i.e. keys for the dict "all_metrics"
+    defined in kernel_matrix_benchmarks/plotting/metrics.py.
+    """
     plot_data = []
     for algo in sorted(all_data.keys(), key=lambda x: x.lower()):
         xs, ys, ls, axs, ays, als = create_pointset(
@@ -144,10 +151,10 @@ def get_lines(all_data, xn, yn, render_all_points):
             xs, ys, ls = axs, ays, als
         plot_data.append(
             {
-                "name": algo,
-                "coords": zip(xs, ys),
-                "labels": ls,
-                "scatter": render_all_points,
+                "name": algo,  # Label of the "line" or "scatter" plot.
+                "coords": zip(xs, ys),  # Coordinates in the plots.
+                "labels": ls,  # Hover on points in the interactive visualization.
+                "scatter": render_all_points,  # Scatter vs. line plot
             }
         )
     return plot_data
@@ -156,19 +163,29 @@ def get_lines(all_data, xn, yn, render_all_points):
 def create_plot(
     all_data, xn, yn, linestyle, j2_env, additional_label="", plottype="line"
 ):
+    # Load the relevant "metrics" functions for the x and y axes.
     xm, ym = (metrics[xn], metrics[yn])
-    render_all_points = plottype == "bubble"
+    render_all_points = plottype == "bubble"  # "line" vs "bubble"
+    # Extract the Pareto frontier vs just retrieve the full point set:
     plot_data = get_lines(all_data, xn, yn, render_all_points)
+
+    # Insert the point coordinates in a tikzpicture:
     latex_code = j2_env.get_template("latex.template").render(
         plot_data=plot_data,
         caption=get_plot_label(xm, ym),
         xlabel=xm["description"],
         ylabel=ym["description"],
     )
+
+    #  Mmmm... Do we really need to recompute the Pareto frontier here?
+    # !!! I leave it here just in case.
     plot_data = get_lines(all_data, xn, yn, render_all_points)
+
     button_label = hashlib.sha224(
         (get_plot_label(xm, ym) + additional_label).encode("utf-8")
     ).hexdigest()
+
+    # Insert the point coordinates in a javascript interactive plot:
     return j2_env.get_template("chartjs.template").render(
         args=args,
         latex_code=latex_code,
@@ -185,17 +202,25 @@ def create_plot(
 
 
 def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
+    """Builds a detailed interactive page for every algorithm and dataset."""
+
     for (name, runs) in data.items():
         print("Building '%s'" % name)
         all_runs = runs.keys()
         label = label_func(name)
         data = {"normal": [], "scatter": []}
 
+        # Loop over the required pairs of (xaxis, yaxis):
         for plottype in args.plottype:
+            # Select the names of the variables on the "x" and "y" axes.
             xn, yn = plot_variants[plottype]
+            # Display the Pareto fronts:
             data["normal"].append(
                 create_plot(runs, xn, yn, convert_linestyle(linestyles), j2_env)
             )
+            # If required, we also display the full point clouds.
+            # This is especially useful when tuning the experiments
+            # in algos.yaml.
             if args.scatter:
                 data["scatter"].append(
                     create_plot(
@@ -209,21 +234,25 @@ def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
                     )
                 )
 
-        # create png plot for summary page
+        # Create a .png plot for the summary page:
+        # !!! Right now, this is an ann-only recall vs time plot.
         data_for_plot = {}
         for k in runs.keys():
             data_for_plot[k] = prepare_data(runs[k], "k-nn", "qps")
+
         plot.create_plot(
             data_for_plot,
             False,
             "linear",
             "log",
-            "k-nn",
+            "k-nn",  # Obsolete choice!
             "qps",
             args.outputdir + name + ".png",
             linestyles,
             batch,
         )
+
+        # Final render of the detailed page:
         output_path = args.outputdir + name + ".html"
         with open(output_path, "w") as text_file:
             text_file.write(
@@ -234,11 +263,16 @@ def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
 
 
 def build_index_site(datasets, algorithms, j2_env, file_name):
+    """Builds the front page of our website (index.html)."""
+
     dataset_data = {"batch": [], "non-batch": []}
     for mode in ["batch", "non-batch"]:
+        # Arbitrary sorting order: first by "metric" name...
+        # !!! Obsolete choice?
         distance_measures = sorted(
             set([get_distance_from_desc(e) for e in datasets[mode].keys()])
         )
+        # ...then by dataset name:
         sorted_datasets = sorted(
             set([get_dataset_from_desc(e) for e in datasets[mode].keys()])
         )
@@ -246,15 +280,20 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
         for dm in distance_measures:
             d = {"name": dm.capitalize(), "entries": []}
             for ds in sorted_datasets:
+                # Extract all experiments with the correct info...
                 matching_datasets = [
                     e
                     for e in datasets[mode].keys()
                     if get_dataset_from_desc(e) == ds
                     and get_distance_from_desc(e) == dm  # noqa
                 ]
+                # ...and sort them by increasing number of "K"-Nearest Neighbors:
+                # !!! obsolete
                 sorted_matches = sorted(
                     matching_datasets, key=lambda e: int(get_count_from_desc(e))
                 )
+                # Add the relevant data to a list in a dict, that will
+                # be matched by a Jinja template:
                 for idd in sorted_matches:
                     d["entries"].append({"name": idd, "desc": get_dataset_label(idd)})
             dataset_data[mode].append(d)
@@ -271,25 +310,36 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
 
 def load_all_results():
     """Read all result files and compute all metrics"""
+
     all_runs_by_dataset = {"batch": {}, "non-batch": {}}
     all_runs_by_algorithm = {"batch": {}, "non-batch": {}}
     cached_true_dist = []
     old_sdn = None
+
+    # N.B.: We keep experiments "one query at a time" and "all queries at once"
+    #       separate, as they address different use cases.
     for mode in ["non-batch", "batch"]:
         for properties, f in results.load_all_results(batch_mode=(mode == "batch")):
+            # String identifier for a problem (dataset, kernel, ...):
             sdn = get_run_desc(properties)
+            # If this is a new problem, we must recompute some variables:
             if sdn != old_sdn:
                 dataset, _ = get_dataset(properties["dataset"])
+                # !!! "distances" is obsolete, ANN-only
                 cached_true_dist = list(dataset["distances"])
                 old_sdn = sdn
+
             algo_ds = get_dataset_label(sdn)
             desc_suffix = "-batch" if mode == "batch" else ""
             algo = properties["algo"] + desc_suffix
             sdn += desc_suffix
             ms = compute_all_metrics(cached_true_dist, f, properties, args.recompute)
+
+            # Put the run in a dict sorted by method...
             all_runs_by_algorithm[mode].setdefault(algo, {}).setdefault(
                 algo_ds, []
             ).append(ms)
+            # ... and in a dict sorted by dataset:
             all_runs_by_dataset[mode].setdefault(sdn, {}).setdefault(algo, []).append(
                 ms
             )
@@ -297,37 +347,36 @@ def load_all_results():
     return (all_runs_by_dataset, all_runs_by_algorithm)
 
 
+# We use the Jinja templating system:
 j2_env = Environment(loader=FileSystemLoader("./templates/"), trim_blocks=True)
 j2_env.globals.update(zip=zip, len=len)
+
+# Load the data:
 runs_by_ds, runs_by_algo = load_all_results()
+# Retrieve the names of the datasets - each of whom receives a detailed page:
 dataset_names = [
     get_dataset_label(x)
     for x in list(runs_by_ds["batch"].keys()) + list(runs_by_ds["non-batch"].keys())
 ]
+# Retrieve the names of the algorithms - each of whom receives a detailed page:
 algorithm_names = list(runs_by_algo["batch"].keys()) + list(
     runs_by_algo["non-batch"].keys()
 )
 
 linestyles = {**create_linestyles(dataset_names), **create_linestyles(algorithm_names)}
+ds_l = lambda label: get_dataset_label(label)
 
-build_detail_site(
-    runs_by_ds["non-batch"],
-    lambda label: get_dataset_label(label),
-    j2_env,
-    linestyles,
-    False,
-)
+# Detailed pages for datasets processed "one query at a time":
+build_detail_site(runs_by_ds["non-batch"], ds_l, j2_env, linestyles, False)
 
-build_detail_site(
-    runs_by_ds["batch"],
-    lambda label: get_dataset_label(label),
-    j2_env,
-    linestyles,
-    True,
-)
+# Detailed pages for datasets processed "all queries at once":
+build_detail_site(runs_by_ds["batch"], ds_l, j2_env, linestyles, True)
 
+# Detailed pages for algorithms run "one query at a time":
 build_detail_site(runs_by_algo["non-batch"], lambda x: x, j2_env, linestyles, False)
 
+# Detailed pages for algorithms run "all queries at once":
 build_detail_site(runs_by_algo["batch"], lambda x: x, j2_env, linestyles, True)
 
+# Index page:
 build_index_site(runs_by_ds, runs_by_algo, j2_env, "index.html")
