@@ -8,6 +8,8 @@ def pdist(a, b, metric):
     return scipy_pdist([a, b], metric=metric)[0]
 
 
+# !!! The whole file is essentially obsolete?
+
 # Need own implementation of jaccard because scipy's
 # implementation is different
 
