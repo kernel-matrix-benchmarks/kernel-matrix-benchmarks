@@ -11,7 +11,9 @@ sudo apt install zip
 
 # Make sure that we can use Docker:
 sudo usermod -a -G docker ubuntu
-newgrp docker
+# We have to switch to the docker group,
+# and use some heredocs to execute the remainder of the script:
+newgrp docker << NEWGRP
 
 # Install the Python requirements:
 pip3 install -r requirements.txt
@@ -26,7 +28,7 @@ python3 run.py --dataset glove-100-angular
 python3 run.py --dataset glove-200-angular
 
 # Create the website and compress it in a zip file:
-sudo python3 create_website.py
+sudo python3 create_website.py --outputdir website
 zip -r website.zip website
 
 # Then, just download the website by running
@@ -36,3 +38,4 @@ zip -r website.zip website
 # on your local machine, where:
 # - "kernel-matrix-benchmarks.pem" is the encryption key to your instance.
 # - "....amazonaws.com" is the id of your instance.
+NEWGRP

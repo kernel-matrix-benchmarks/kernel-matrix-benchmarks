@@ -93,7 +93,7 @@ def get_dataset_label(desc):
 
 def directory_path(s):
     if not os.path.isdir(s):
-        raise argparse.ArgumentTypeError("'%s' is not a directory" % s)
+        os.makedirs(s)
     return s + "/"
 
 
@@ -346,10 +346,6 @@ def load_all_results():
 
     return (all_runs_by_dataset, all_runs_by_algorithm)
 
-
-# Make sure that the output folder (website/) exists:
-if not os.path.isdir(args.outputdir):
-    os.makedirs(args.outputdir)
 
 # We use the Jinja templating system:
 j2_env = Environment(loader=FileSystemLoader("./templates/"), trim_blocks=True)
