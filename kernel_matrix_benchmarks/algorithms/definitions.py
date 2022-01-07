@@ -10,6 +10,8 @@ from enum import Enum
 from itertools import product
 
 
+# This file instantiates the algorithm descriptions located in "algos.yaml".
+
 Definition = collections.namedtuple(
     "Definition",
     [
@@ -49,6 +51,7 @@ class InstantiationStatus(Enum):
 
 
 def algorithm_status(definition):
+    """Checks that an algorithm can be loaded."""
     try:
         module = importlib.import_module(definition.module)
         if hasattr(module, definition.constructor):
@@ -78,6 +81,7 @@ def _generate_combinations(args):
 
 
 def _substitute_variables(arg, vs):
+    """Replaces the magic keywords "@kernel", etc. used in "algos.yaml"."""
     if isinstance(arg, dict):
         return dict([(k, _substitute_variables(v, vs)) for k, v in arg.items()])
     elif isinstance(arg, list):
@@ -89,11 +93,14 @@ def _substitute_variables(arg, vs):
 
 
 def _get_definitions(definition_file):
+    """Parses "algos.yaml"."""
     with open(definition_file, "r") as f:
         return yaml.load(f, yaml.SafeLoader)
 
 
 def list_algorithms(definition_file):
+    """High-level overview of "algos.yaml"."""
+
     definitions = _get_definitions(definition_file)
 
     print("The following algorithms are supported...")
@@ -106,6 +113,7 @@ def list_algorithms(definition_file):
 
 
 def get_unique_algorithms(definition_file):
+    """Removes doublons from "algos.yaml"."""
     definitions = _get_definitions(definition_file)
     algos = set()
     for point in definitions:

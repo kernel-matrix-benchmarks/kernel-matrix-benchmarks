@@ -4,6 +4,8 @@ from kernel_matrix_benchmarks.algorithms.base import BaseANN
 
 
 class CKDTree(BaseANN):
+    """KD-Tree implementation, based on SciPy."""
+
     def __init__(self, metric, leaf_size=20):
         self._leaf_size = leaf_size
         self._metric = metric
