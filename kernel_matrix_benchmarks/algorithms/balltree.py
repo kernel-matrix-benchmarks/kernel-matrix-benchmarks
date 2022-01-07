@@ -5,6 +5,8 @@ from kernel_matrix_benchmarks.algorithms.base import BaseANN
 
 
 class BallTree(BaseANN):
+    """BallTree implementation, based on scikit-learn."""
+
     def __init__(self, metric, leaf_size=20):
         self._leaf_size = leaf_size
         self._metric = metric

@@ -4,6 +4,8 @@ from kernel_matrix_benchmarks.algorithms.base import BaseANN
 
 
 class DummyAlgoMt(BaseANN):
+    """Random algorithm, for testing purposes."""
+
     def __init__(self, metric):
         self.name = "DummyAlgoMultiThread"
 
@@ -15,6 +17,8 @@ class DummyAlgoMt(BaseANN):
 
 
 class DummyAlgoSt(BaseANN):
+    """Random algorithm, for testing purposes."""
+
     def __init__(self, metric):
         self.name = "DummyAlgoSingleThread"
 
