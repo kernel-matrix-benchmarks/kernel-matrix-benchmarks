@@ -89,7 +89,7 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="glove-100-angular",
+        default="fashion-mnist-784-euclidean",
         choices=DATASETS.keys(),
     )
     parser.add_argument(  # !!! We should remove this argument !!!

@@ -140,8 +140,8 @@ def get_definitions(
     if "any" in definitions[point_type]:
         algorithm_definitions.update(definitions[point_type]["any"])
 
-    # And add the algorithms that "only" support the target metric:
-    algorithm_definitions.update(definitions[point_type][distance_metric])
+    # And add the algorithms that "only" support the target metric, if any:
+    algorithm_definitions.update(definitions[point_type].get(distance_metric, {}))
 
     # Step 2: Process the experiments/libraries ---------------------
     definitions = []
