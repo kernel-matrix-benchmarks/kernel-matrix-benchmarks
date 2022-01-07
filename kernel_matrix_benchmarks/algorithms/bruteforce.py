@@ -6,6 +6,8 @@ from kernel_matrix_benchmarks.algorithms.base import BaseANN
 
 
 class BruteForce(BaseANN):
+    """Bruteforce implementation, based on scikit-learn."""
+
     def __init__(self, metric):
         if metric not in ("angular", "euclidean", "hamming"):
             raise NotImplementedError("BruteForce doesn't support metric %s" % metric)
@@ -32,7 +34,7 @@ class BruteForce(BaseANN):
 
 
 class BruteForceBLAS(BaseANN):
-    """kNN search that uses a linear scan = brute force."""
+    """Bruteforce implementation, using BLAS through NumPy."""
 
     def __init__(self, metric, precision=numpy.float32):
         if metric not in ("angular", "euclidean", "hamming", "jaccard"):
