@@ -43,7 +43,17 @@ float: # Point coordinates = vectors of floats
             - { "M": 8, "efConstruction": 500 }
           query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
 
+    dummy:
+      docker-tag: kernel-matrix-benchmarks-sklearn
+      module: kernel_matrix_benchmarks.algorithms.dummy_algo
+      constructor: DummyAlgoSt
+      base-args: ["@metric"]
+      run-groups:
+        empty:
+          args: []
+
     bruteforce:
+      disabled: true
       docker-tag: kernel-matrix-benchmarks-sklearn
       module: kernel_matrix_benchmarks.algorithms.bruteforce
       constructor: BruteForce
@@ -51,7 +61,9 @@ float: # Point coordinates = vectors of floats
       run-groups:
         empty:
           args: []
+
     bruteforce-blas:
+      disabled: true
       docker-tag: kernel-matrix-benchmarks-sklearn
       module: kernel_matrix_benchmarks.algorithms.bruteforce
       constructor: BruteForceBLAS
