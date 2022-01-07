@@ -56,17 +56,26 @@ Interactive plots can be found at <http://kernel-matrix-benchmarks.com>. These a
 
 ## Install
 
-The only prerequisite is Python (tested with 3.6) and Docker.
+The only dependencies are Python (tested with 3.6) and Docker.
+To install them on a new AWS instance:
+
+1. Update the list of packages with `sudo apt update`.
+2. Install the Python package manager with `sudo apt install python3-pip`.
+3. Install Docker with `sudo apt install docker.io`.
+4. Add the current user to the Docker group. Assuming that you are "ubuntu", this is done with `sudo usermod -a -G docker ubuntu`.
+5. Refresh the Docker group with `newgrp docker`.
+
+Then:
 
 1. Clone the repo (`git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git`).
 2. Enter the main directory (`cd kernel-matrix-benchmarks`).
-3. Run `pip install -r requirements.txt`.
-4. Run `python install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
+3. Run `pip3 install -r requirements.txt`.
+4. Run `python3 install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
 
 ## Running
 
-1. Run `python run.py` (this can take an extremely long time, potentially days)
-2. Run `python plot.py` or `python create_website.py` to plot results.
+1. Run `python3 run.py` (this can take an extremely long time, potentially days)
+2. Run `python3 plot.py` or `python3 create_website.py` to plot results.
 
 You can customize the algorithms and datasets if you want to:
 
