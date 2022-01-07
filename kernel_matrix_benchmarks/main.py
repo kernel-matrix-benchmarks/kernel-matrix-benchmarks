@@ -130,7 +130,7 @@ def main():
         type=positive_int,
         help="run each algorithm instance %(metavar)s times and use only"
         " the best result",
-        default=5,
+        default=1,
     )
     parser.add_argument(
         "--timeout",
@@ -145,7 +145,7 @@ def main():
         help="If set, then will run everything locally (inside the same "
         "process) rather than using Docker",
     )
-    parser.add_argument(  # !!! We should remove this argument !!!
+    parser.add_argument(  # !!! We could remove this argument !!!
         "--batch",
         action="store_true",
         help="If set, algorithms get all queries at once",

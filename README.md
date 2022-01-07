@@ -74,8 +74,9 @@ Then:
 
 ## Running
 
-1. Run `python3 run.py` (this can take an extremely long time, potentially days)
-2. Run `python3 plot.py` or `python3 create_website.py` to plot results.
+1. Run `python3 run.py` (this can take an extremely long time, potentially days).
+   Note that with Docker, the root user owns all the output files.
+2. Run `sudo python3 plot.py` or `sudo python3 create_website.py` to plot results.
 
 You can customize the algorithms and datasets if you want to:
 

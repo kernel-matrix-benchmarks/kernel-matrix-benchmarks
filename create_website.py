@@ -116,7 +116,7 @@ parser.add_argument(
 parser.add_argument(
     "--outputdir",
     help="Select output directory",
-    default=".",
+    default="website",
     type=directory_path,
     action="store",
 )
@@ -346,6 +346,10 @@ def load_all_results():
 
     return (all_runs_by_dataset, all_runs_by_algorithm)
 
+
+# Make sure that the output folder (website/) exists:
+if not os.path.isdir(args.outputdir):
+    os.makedirs(args.outputdir)
 
 # We use the Jinja templating system:
 j2_env = Environment(loader=FileSystemLoader("./templates/"), trim_blocks=True)
