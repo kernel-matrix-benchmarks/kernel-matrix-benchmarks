@@ -38,9 +38,11 @@ All data sets are pre-split into train/test and come with ground truth data. We 
 | GloVe                                                             |        100 |  1,183,514 |    10,000 | Exponential | Angular   | [HDF5](http://ann-benchmarks.com/glove-100-angular.hdf5) (463MB)           |
 | GloVe                                                             |        200 |  1,183,514 |    10,000 | Exponential | Angular   | [HDF5](http://ann-benchmarks.com/glove-200-angular.hdf5) (918MB)           |
 
+
 ## Results
 
-Interactive plots can be found at <http://kernel-matrix-benchmarks.com>. These are all as of December 2021, running all benchmarks on a r5.4xlarge machine on AWS with `--parallelism 7`:
+Full interactive plots can be found at <http://kernel-matrix-benchmarks.com>.
+The main performance graphs are summarized below, with one figure per dataset:
 
 ### fashion-mnist-784-euclidean
 
@@ -53,6 +55,101 @@ Interactive plots can be found at <http://kernel-matrix-benchmarks.com>. These a
 ### glove-100-angular
 
 ![glove-100-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-100-angular.png)
+
+
+## Run the benchmarks
+
+To reproduce these results, simply create a new AWS EC2 instance (Ubuntu 20.04) with the following AWS CLI command:
+
+```bash
+aws ec2 request-spot-instances --type "one-time" --launch-specification file://kmb-instance.json --instance-interruption-behavior "stop"
+```
+
+Specifications of our instance (`kmb-instance.json`):
+
+```json
+{
+  "ImageId": "ami-04505e74c0741db8d",
+  "KeyName": "kernel-matrix-benchmarks",
+  "InstanceType": "r5b.large",
+  "Placement": {
+    "AvailabilityZone": "us-east-1"
+  },
+  "BlockDeviceMappings": [
+    {
+      "Ebs": {
+        "DeleteOnTermination": false,
+        "VolumeSize": 20,
+        "VolumeType": "gp2",
+      },
+    }
+  ],
+  "UserData": "IyEvYmluL2Jhc2gKc3VkbyAtdSB1YnVudHUgZ2l0IGNsb25lIGh0dHBzOi8vZ2l0aHViLmNvbS9rZXJuZWwtbWF0cml4LWJlbmNobWFya3Mva2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzLmdpdApzdWRvIC11IHVidW50dSBjZCBrZXJuZWwtbWF0cml4LWJlbmNobWFya3MKc3VkbyAtdSB1YnVudHUgdG11eCBuZXctc2Vzc2lvbiAtZCAuL2NyZWF0ZV93ZWJzaXRlX0FXUy5zaCAK",
+}
+```
+
+That reads, with comments:
+
+```json
+{
+  "ImageId": "ami-04505e74c0741db8d",  // Ubuntu 20.04, at least in us-east-1
+  "KeyName": "kernel-matrix-benchmarks", // Name of your AWS encryption key
+  // Suggested instances:
+  // R5b instances = GPU: None
+  //                 CPU: 2nd generation Intel Xeon Scalable (Cascade Lake),
+  //                      which supports AVX-512 (advanced SIMD instructions). 
+  //                 + Lots of RAM.
+  "InstanceType": "r5b.large",  // spot price ~ $0.02/h, 2vCPU, 16Gb RAM
+  // "InstanceType": "r5b.4xlarge",  // spot price ~ $0.17/h, 16vCPU, 128Gb RAM
+  // "InstanceType": "r5b.16xlarge",  // spot price ~ $0.70/h, 64vCPU, 512Gb RAM
+  //
+  // P3 instances = GPU: Tesla V100 with 16Gb "RAM"/GPU,
+  //                CPU: Intel Xeon E5-2686 v4 (Broadwell)
+  //                     which supports AVX and AVX2 but not AVX-512.
+  // "InstanceType": "p3.2xlarge",  // spot price ~ $0.92/h, 1GPU, 8vCPU, 61Gb RAM
+  "Placement": {
+    "AvailabilityZone": "us-east-1"  // North Virginia, default option
+  },
+  "BlockDeviceMappings": [  // "Hard drive"
+    {
+      "Ebs": {
+        "DeleteOnTermination": false,  // Just in case we want to inspect things
+        "VolumeSize": 20,  // 20Gb storage space
+        "VolumeType": "gp2",
+      },
+    }
+  ],
+  "UserData": "IyEvYmluL2Jhc2gKc3VkbyAtdSB1YnVudHUgZ2l0IGNsb25lIGh0dHBzOi8vZ2l0aHViLmNvbS9rZXJuZWwtbWF0cml4LWJlbmNobWFya3Mva2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzLmdpdApzdWRvIC11IHVidW50dSBjZCBrZXJuZWwtbWF0cml4LWJlbmNobWFya3MKc3VkbyAtdSB1YnVudHUgdG11eCBuZXctc2Vzc2lvbiAtZCAuL2NyZWF0ZV93ZWJzaXRlX0FXUy5zaCAK",
+}
+```
+
+The user data is a base64 encoding of the startup script below (`base64 -w 0 startup.sh`):
+
+```bash
+#!/bin/bash
+sudo -u ubuntu git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git
+sudo -u ubuntu cd kernel-matrix-benchmarks
+sudo -u ubuntu tmux new-session -d ./create_website_AWS.sh
+```
+
+On the cloud instance, you can monitor progress with:
+
+- `tmux a`, to get access to the script above.
+- `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
+
+Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`.
+Download it on your local machine with:
+
+```bash
+scp -i "kernel-matrix-benchmarks.pem" ubuntu@....amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
+```
+
+In the command above:
+
+- `kernel-matrix-benchmarks.pem` is the encryption key to your instance.
+- `....amazonaws.com` is the id of your instance.
+
+Finally, unzip the file `website.zip` and open `website/index.html` to inspect your results.
 
 ## Install
 
@@ -67,8 +164,8 @@ To install them on a new AWS instance:
 
 Then:
 
-1. Clone the repo (`git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git`).
-2. Enter the main directory (`cd kernel-matrix-benchmarks`).
+1. Clone the repo  with `git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git`.
+2. Enter the main directory with `cd kernel-matrix-benchmarks`.
 3. Run `pip3 install -r requirements.txt`.
 4. Run `python3 install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
 
@@ -83,6 +180,7 @@ You can customize the algorithms and datasets if you want to:
 - Check that `algos.yaml` contains the parameter settings that you want to test
 - To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
 - To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
+
 
 ## Including your algorithm
 

@@ -4,10 +4,8 @@
 # This code is meant to be used in a fresh AWS instance.
 
 # Install the required dependencies:
-sudo apt update
-sudo apt install python3-pip
-sudo apt install docker.io
-sudo apt install zip
+sudo apt -y update
+sudo apt -y install python3-pip docker.io zip
 
 # Make sure that we can use Docker:
 sudo usermod -a -G docker ubuntu
