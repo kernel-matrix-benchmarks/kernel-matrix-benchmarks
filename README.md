@@ -90,7 +90,7 @@ Specifications of our instance (`kmb-instance.json`):
 
 That reads, with comments:
 
-```json
+```yaml
 {
   "ImageId": "ami-04505e74c0741db8d",  // Ubuntu 20.04, at least in us-east-1
   "KeyName": "kernel-matrix-benchmarks", // Name of your AWS encryption key
