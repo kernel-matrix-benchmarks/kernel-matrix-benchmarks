@@ -62,10 +62,17 @@ The main performance graphs are summarized below, with one figure per dataset:
 To reproduce these results, simply create a new AWS EC2 instance (Ubuntu 20.04) with the following AWS CLI command:
 
 ```bash
-aws ec2 request-spot-instances --type "one-time" --launch-specification file://kmb-instance.json --instance-interruption-behavior "stop"
+aws ec2 create-security-group --group-name KmbSsh --description "SSH access for Kernel Matrix Benchmarks"
+aws ec2 authorize-security-group-ingress --group-name KmbSsh --protocol tcp --port 22 --cidr 0.0.0.0/0
+aws ec2 request-spot-instances \
+  --type "persistent" \
+  --instance-interruption-behavior "stop" \
+  --launch-specification file://kmb-instance.json \
+  --tag-specification 'ResourceType=spot-instances-request,Tags=[{Key=Task,Value=KMB},{Key=Hardware,Value=CPU}]'
 ```
 
-Specifications of our instance (`kmb-instance.json`):
+Before running the script above, you will need to upload
+the specifications below in the file `kmb-instance.json` through the AWS CLI web interface:
 
 ```json
 {
@@ -73,22 +80,23 @@ Specifications of our instance (`kmb-instance.json`):
   "KeyName": "kernel-matrix-benchmarks",
   "InstanceType": "r5b.large",
   "Placement": {
-    "AvailabilityZone": "us-east-1"
+    "AvailabilityZone": "us-east-1c"
   },
   "BlockDeviceMappings": [
     {
+      "DeviceName": "/dev/sda1",
       "Ebs": {
         "DeleteOnTermination": false,
         "VolumeSize": 20,
-        "VolumeType": "gp2",
-      },
+        "VolumeType": "gp2"
+      }
     }
   ],
-  "UserData": "IyEvYmluL2Jhc2gKc3VkbyAtdSB1YnVudHUgZ2l0IGNsb25lIGh0dHBzOi8vZ2l0aHViLmNvbS9rZXJuZWwtbWF0cml4LWJlbmNobWFya3Mva2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzLmdpdApzdWRvIC11IHVidW50dSBjZCBrZXJuZWwtbWF0cml4LWJlbmNobWFya3MKc3VkbyAtdSB1YnVudHUgdG11eCBuZXctc2Vzc2lvbiAtZCAuL2NyZWF0ZV93ZWJzaXRlX0FXUy5zaCAK",
+  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gK"
 }
 ```
 
-That reads, with comments:
+This reads, with comments:
 
 ```js
 {
@@ -108,31 +116,33 @@ That reads, with comments:
   //                     which supports AVX and AVX2 but not AVX-512.
   // "InstanceType": "p3.2xlarge",  // spot price ~ $0.92/h, 1GPU, 8vCPU, 61Gb RAM
   "Placement": {
-    "AvailabilityZone": "us-east-1"  // North Virginia, default option
+    "AvailabilityZone": "us-east-1c"  // North Virginia, default option
   },
   "BlockDeviceMappings": [  // "Hard drive"
     {
+      "DeviceName": "/dev/sda1",
       "Ebs": {
         "DeleteOnTermination": false,  // Just in case we want to inspect things
         "VolumeSize": 20,  // 20Gb storage space
-        "VolumeType": "gp2",
-      },
+        "VolumeType": "gp2"
+      }
     }
   ],
-  "UserData": "IyEvYmluL2Jhc2gKc3VkbyAtdSB1YnVudHUgZ2l0IGNsb25lIGh0dHBzOi8vZ2l0aHViLmNvbS9rZXJuZWwtbWF0cml4LWJlbmNobWFya3Mva2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzLmdpdApzdWRvIC11IHVidW50dSBjZCBrZXJuZWwtbWF0cml4LWJlbmNobWFya3MKc3VkbyAtdSB1YnVudHUgdG11eCBuZXctc2Vzc2lvbiAtZCAuL2NyZWF0ZV93ZWJzaXRlX0FXUy5zaCAK",
+  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gK"
 }
 ```
 
-The user data is a base64 encoding of the startup script below (`base64 -w 0 startup.sh`):
+Please note that the user data is a base64 encoding of the startup script below (`base64 -w 0 startup.sh`):
 
 ```bash
 #!/bin/bash
+cd /home/ubuntu
 sudo -u ubuntu git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git
 sudo -u ubuntu cd kernel-matrix-benchmarks
 sudo -u ubuntu tmux new-session -d ./create_website_AWS.sh
 ```
 
-On the cloud instance, you can monitor progress with:
+When connected to the cloud instance via ssh, you can monitor progress with:
 
 - `tmux a`, to get access to the script above.
 - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
