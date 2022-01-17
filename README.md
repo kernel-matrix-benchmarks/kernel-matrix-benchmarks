@@ -92,7 +92,7 @@ the specifications below in the file `kmb-instance.json` through the AWS CLI web
       }
     }
   ],
-  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gK"
+  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gKc3VkbyAtdSB1YnVudHUgdG11eCBzZXQgcmVtYWluLW9uLWV4aXQgb24K"
 }
 ```
 
@@ -128,7 +128,7 @@ This reads, with comments:
       }
     }
   ],
-  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gK"
+  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gKc3VkbyAtdSB1YnVudHUgdG11eCBzZXQgcmVtYWluLW9uLWV4aXQgb24K"
 }
 ```
 
@@ -138,8 +138,9 @@ Please note that the user data is a base64 encoding of the startup script below 
 #!/bin/bash
 cd /home/ubuntu
 sudo -u ubuntu git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git
-sudo -u ubuntu cd kernel-matrix-benchmarks
+cd kernel-matrix-benchmarks
 sudo -u ubuntu tmux new-session -d ./create_website_AWS.sh
+sudo -u ubuntu tmux set remain-on-exit on
 ```
 
 When connected to the cloud instance via ssh, you can monitor progress with:

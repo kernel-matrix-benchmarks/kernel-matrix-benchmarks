@@ -12,11 +12,12 @@ sudo usermod -a -G docker ubuntu
 # We have to switch to the docker group,
 # and use some heredocs to execute the remainder of the script:
 newgrp docker << NEWGRP
-# Log output
-script log_terminal.log
-
 # Install the Python requirements:
 pip3 install -r requirements.txt
+# Also do it for the sudo user:
+pip3 install -r requirements.txt
+
+# Install all the docker images:
 python3 install.py
 
 # Run our benchmarks on all datasets:
