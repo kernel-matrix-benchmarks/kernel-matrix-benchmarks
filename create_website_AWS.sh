@@ -15,7 +15,7 @@ newgrp docker << NEWGRP
 # Install the Python requirements:
 pip3 install -r requirements.txt
 # Also do it for the sudo user:
-pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt
 
 # Install all the docker images:
 python3 install.py
