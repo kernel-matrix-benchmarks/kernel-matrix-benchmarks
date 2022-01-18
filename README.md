@@ -95,8 +95,8 @@ To reproduce these results in the cloud:
 1. Create an account on [AWS EC2](https://aws.amazon.com/aws/ec2).
 2. Log in to the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home?region=us-east-1).
 3. Use the "Actions" button in the upper-right corner of the window to upload
-  the specifications file [`kmb-instance.json`](kmb-instance.json) in your CloudShell session.
-  You may find comments and alternative options in [`kmb-instance-full.js`](kmb-instance-full.js).
+  the specifications file [kmb-instance.json](kmb-instance.json) in your CloudShell session.
+  You may find comments and alternative options in [kmb-instance-full.js](kmb-instance-full.js).
 4. Create a new instance (Ubuntu 20.04) with the following AWS CloudShell commands:
 
 ```bash
@@ -116,8 +116,8 @@ aws ec2 request-spot-instances \
 ```
 
 5. On startup, the instance will automatically clone this repository
-  and run the [`create_website_AWS.sh`](create_website_AWS.sh) script.
-6. Log in to the cloud instance via ssh, with 
+  and run the [create_website_AWS.sh](create_website_AWS.sh) script.
+6. Log in to the cloud instance via ssh, with
 
 ```bash
 ssh -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazonaws.com
@@ -127,7 +127,7 @@ ssh -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazona
 
 7. You can monitor progress with:
 
-  - `tmux a` to get access to the terminal running [`create_website_AWS.sh`](create_website_AWS.sh).
+  - `tmux a` to get access to the terminal running [create_website_AWS.sh](create_website_AWS.sh).
   - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
 
 8. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download the archive on your local machine with:
@@ -149,31 +149,31 @@ Once you are done with your instance,
 
 ## Including your algorithm
 
-1. Add your algorithm into [`kernel_matrix_benchmarks/algorithms`](`kernel_matrix_benchmarks/algorithms`)
+1. Add your algorithm into [kernel_matrix_benchmarks/algorithms](kernel_matrix_benchmarks/algorithms)
    by providing a small Python wrapper.
-2. Add a Dockerfile in [`install/`](install/) for it
-3. Add it to [`algos.yaml`](algos.yaml)
+2. Add a Dockerfile in [install/](install/) for it
+3. Add it to [algos.yaml](algos.yaml)
 
 
 ## Main files
 
-- [`algos.yaml`](algos.yaml): lists all supported methods and parameter values.
-- [`install.py`](install.py): builds the Docker images from [`install/`](install/).
-- [`kernel_matrix_benchmarks/`](kernel_matrix_benchmarks/):
-  - [`main.py`](kernel_matrix_benchmarks/main.py): runs all supported experiments on a given dataset.
-  - [`runner.py`](kernel_matrix_benchmarks/runner.py): runs a specific experiment.
-  - [`datasets.py`](kernel_matrix_benchmarks/datasets.py): supported datasets.
-  - [`algorithms/`](kernel_matrix_benchmarks/algorithms/):
-    - [`definitions.py`](kernel_matrix_benchmarks/algorithms/definitions.py): parser for [`algos.yaml`](algos.yaml).
-    - [`base.py`](kernel_matrix_benchmarks/algorithms/base.py): common interface for the API modules.
-  - [`plotting/`](kernel_matrix_benchmarks/plotting/):
-    - [`metrics.py`](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
-    - [`plot_variants.py`](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.
+- [algos.yaml](algos.yaml): lists all supported methods and parameter values.
+- [install.py](install.py): builds the Docker images from [install/](install/).
+- [kernel_matrix_benchmarks/](kernel_matrix_benchmarks/):
+  - [main.py](kernel_matrix_benchmarks/main.py): runs all supported experiments on a given dataset.
+  - [runner.py](kernel_matrix_benchmarks/runner.py): runs a specific experiment.
+  - [datasets.py](kernel_matrix_benchmarks/datasets.py): supported datasets.
+  - [algorithms/](kernel_matrix_benchmarks/algorithms/):
+    - [definitions.py](kernel_matrix_benchmarks/algorithms/definitions.py): parser for [algos.yaml](algos.yaml).
+    - [base.py](kernel_matrix_benchmarks/algorithms/base.py): common interface for the methods included in the benchmark.
+  - [plotting/](kernel_matrix_benchmarks/plotting/):
+    - [metrics.py](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
+    - [plot_variants.py](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.
     - [utils.py](kernel_matrix_benchmarks/plotting/utils.py): computes the performance metrics and Pareto fronts.
 
-- [`plot.py`](plot.py): renders png images.
-- [`create_website.py`](create_website.py): renders the website using the 
-  [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) templates from [`templates/`](templates/).
+- [plot.py](plot.py): renders png images.
+- [create_website.py](create_website.py): renders the website using the
+  [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) templates from [templates/](templates/).
 
 ## Principles
 
