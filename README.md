@@ -93,14 +93,11 @@ You can customize the algorithms and datasets if you want to:
 To reproduce these results in the cloud:
 
 1. Create an account on [AWS EC2](https://aws.amazon.com/aws/ec2).
-
 2. Log in to the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home?region=us-east-1).
-
 3. Use the "Actions" button in the upper-right corner of the window to upload
   the specifications file [`kmb-instance.json`](kmb-instance.json) in your CloudShell session.
-  You may find comments and alternative options in [`kmb-instance-full.json`](kmb-instance-full.json).
-
-4. Create a new instance (Ubuntu 20.04) with the following AWS CloudShell command:
+  You may find comments and alternative options in [`kmb-instance-full.js`](kmb-instance-full.js).
+4. Create a new instance (Ubuntu 20.04) with the following AWS CloudShell commands:
 
 ```bash
 aws ec2 create-security-group \
@@ -118,23 +115,29 @@ aws ec2 request-spot-instances \
   --tag-specification 'ResourceType=spot-instances-request,Tags=[{Key=Task,Value=KmbCPU}]'
 ```
 
-5. On startup, the instance will automatically install the required dependencies
+5. On startup, the instance will automatically clone this repository
   and run the [`create_website_AWS.sh`](create_website_AWS.sh) script.
 
-6. When connected to the cloud instance via ssh, you can monitor progress with:
+6. Log in to the cloud instance via ssh, with 
+
+```bash
+ssh -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazonaws.com
+```
+
+  Where `kernel-matrix-benchmarks.pem` is your [encryption key](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:) and `ec2-1-234-567-890` is the id of your instance.
+
+7. You can monitor progress with:
 
   - `tmux a`, to get access to the script above.
   - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
 
-7. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download it on your local machine with:
+8. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download it on your local machine with:
 
 ```bash
-scp -i "kernel-matrix-benchmarks.pem" ubuntu@....amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
+scp -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
 ```
 
-  Where `kernel-matrix-benchmarks.pem` is your [encryption key](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:) and `....amazonaws.com` is the id of your instance.
-
-8. Finally, unzip the file `website.zip` and open `website/index.html` to inspect your results.
+9. Finally, unzip the file `website.zip` and open `website/index.html` to inspect your results.
 
 Please note that the AWS Console allows you to keep track of your
 [running instances](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:v=3),
