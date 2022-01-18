@@ -84,7 +84,7 @@ Then:
 
 You can customize the algorithms and datasets if you want to:
 
-- Check that `algos.yaml` contains the parameter settings that you want to test
+- Check that [algos.yaml](algos.yaml) contains the parameter settings that you want to test
 - To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
 - To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
 
@@ -95,7 +95,7 @@ To reproduce these results in the cloud:
 1. Create an account on [AWS EC2](https://aws.amazon.com/aws/ec2).
 2. Log in to the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home?region=us-east-1).
 3. Use the "Actions" button in the upper-right corner of the window to upload
-  the specifications file [kmb-instance.json](kmb-instance.json) in your CloudShell session.
+  the specification file [kmb-instance.json](kmb-instance.json) in your CloudShell session.
   You may find comments and alternative options in [kmb-instance-full.js](kmb-instance-full.js).
 4. Create a new instance (Ubuntu 20.04) with the following AWS CloudShell commands:
 
@@ -170,7 +170,6 @@ Once you are done with your instance,
     - [metrics.py](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
     - [plot_variants.py](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.
     - [utils.py](kernel_matrix_benchmarks/plotting/utils.py): computes the performance metrics and Pareto fronts.
-
 - [plot.py](plot.py): renders png images.
 - [create_website.py](create_website.py): renders the website using the
   [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) templates from [templates/](templates/).
