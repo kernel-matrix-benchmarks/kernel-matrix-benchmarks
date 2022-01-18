@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/kernel-matrix-benchmarks/kernel-matrix-benchmarks/kernel%20matrix%20benchmarks?style=flat-square)](https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/actions?query=workflow:benchmarks)
 
-Computations with kernel matrices are a key bottleneck in many applied fields -- from numerical physics to machine learning.
+Computations with kernel matrices are a key bottleneck in many applied fields, from numerical physics to machine learning.
 This website compares acceleration methods for these problems in an objective way.
 
 Specifically, we are interested in...
@@ -149,10 +149,31 @@ Once you are done with your instance,
 
 ## Including your algorithm
 
-1. Add your algorithm into `kernel_matrix_benchmarks/algorithms` by providing a small Python wrapper.
-2. Add a Dockerfile in `install/` for it
-3. Add it to `algos.yaml`
-4. Add it to `.github/workflows/benchmarks.yml`
+1. Add your algorithm into [`kernel_matrix_benchmarks/algorithms`](`kernel_matrix_benchmarks/algorithms`)
+   by providing a small Python wrapper.
+2. Add a Dockerfile in [`install/`](install/) for it
+3. Add it to [`algos.yaml`](algos.yaml)
+
+
+## Main files
+
+- [`algos.yaml`](algos.yaml): lists all supported methods and parameter values.
+- [`install.py`](install.py): builds the Docker images from [`install/`](install/).
+- [`kernel_matrix_benchmarks/`](kernel_matrix_benchmarks/):
+  - [`main.py`](kernel_matrix_benchmarks/main.py): runs all supported experiments on a given dataset.
+  - [`runner.py`](kernel_matrix_benchmarks/runner.py): runs a specific experiment.
+  - [`datasets.py`](kernel_matrix_benchmarks/datasets.py): supported datasets.
+  - [`algorithms/`](kernel_matrix_benchmarks/algorithms/):
+    - [`definitions.py`](kernel_matrix_benchmarks/algorithms/definitions.py): parser for [`algos.yaml`](algos.yaml).
+    - [`base.py`](kernel_matrix_benchmarks/algorithms/base.py): common interface for the API modules.
+  - [`plotting/`](kernel_matrix_benchmarks/plotting/):
+    - [`metrics.py`](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
+    - [`plot_variants.py`](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.
+    - [utils.py](kernel_matrix_benchmarks/plotting/utils.py): computes the performance metrics and Pareto fronts.
+
+- [`plot.py`](plot.py): renders png images.
+- [`create_website.py`](create_website.py): renders the website using the 
+  [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) templates from [`templates/`](templates/).
 
 ## Principles
 
