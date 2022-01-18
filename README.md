@@ -5,7 +5,30 @@
 Computations with kernel matrices are a key bottleneck in many applied fields, from numerical physics to machine learning.
 This website compares acceleration methods for these problems in an objective way.
 
-Specifically, we are interested in...
+Specifically, we are interested in **three main computations**:
+
+**1. Kernel matrix products.** Let us consider:
+
+- A **kernel** function ![k(x,y)](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+k%28x%2Cy%29)
+  defined for any pair of points in dimension D.
+- N **target** points x<sub>1</sub>, ..., x<sub>N</sub> in dimension D, encoded as a `(N, D)` array.
+- M **source** points y<sub>1</sub>, ..., y<sub>M</sub> in dimension D, encoded as a `(M, D)` array.
+- M **source** signals v<sub>1</sub>, ..., v<sub>M</sub> in dimension E, encoded as a `(M, E)` array.
+
+Then, we compute the .
+
+This operation can be understood as the matrix-matrix product between the `(N, M)` **kernel matrix**.
+
+In most applications, the dimension E of the signal vectors v<sub>j</sub> is equal to 1:
+
+
+
+**2. Kernel matrix solver.**
+
+
+**3. Attention layers.**
+
+## Scope
 
 This project contains tools to benchmark various implementations of these operations in a wide range of settings:
 
@@ -181,18 +204,19 @@ Open science:
 - Everyone is welcome to submit pull requests with tweaks and changes to how each library is being used.
 - In particular: if you are the author of one of these libraries and you think that the benchmark can be improved, please consider submitting a pull request.
 - This is meant to be an ongoing project and represent the current state-of-the-art.
-- Make everything easy to replicate, including the installation of the libraries and the data pre-processing.
+- We make everything easy to replicate, including the installation of the libraries and the data pre-processing.
 
 Diverse use cases:
 
-- Showcase challenging datasets from all fields that rely on kernel computations.
-- Benchmark both pre-computation and query times.
-- Support both CPU and GPU implementations.
-- Try many different values of parameters for each library -- and ignore the points that are not on the [precision-performance frontier](https://en.wikipedia.org/wiki/Pareto_front).
+- We showcase challenging datasets from all fields that rely on kernel computations.
+- We benchmark both pre-computation and query times.
+- We support both CPU and GPU implementations.
+- We try many different values of parameters for each library -- and ignore the points that are not on the [precision-performance frontier](https://en.wikipedia.org/wiki/Pareto_front).
 
 ## Authors
 
 - [Jean Feydy](https://www.jeanfeydy.com), [HeKA team](https://team.inria.fr/heka/), [INRIA Paris](https://www.inria.fr/en/centre-inria-de-paris).
+- ...
 
 We rely heavily on the template of the [ANN-benchmarks](https://github.com/erikbern/ann-benchmarks) website, built by [Erik Bernhardsson](https://erikbern.com) with significant contributions from [Martin Aumüller](http://itu.dk/people/maau/) and [Alexander Faithfull](https://github.com/ale-f).
 
