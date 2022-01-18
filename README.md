@@ -19,7 +19,9 @@ Specifically, we are interested in **three main computations**:
 Then, we compute the `(N,E)` array of **target** signals 
 a<sub>1</sub>, ..., a<sub>N</sub> with, for all i between 1 and N:
 
+<p align="center">
 ![a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j .](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+.)
+</p>
 
 We understand this computation as the matrix-matrix product between the `(N,M)` 
 **kernel matrix** K<sub>i,j</sub> = k(x<sub>i</sub>, y<sub>j</sub>) and
