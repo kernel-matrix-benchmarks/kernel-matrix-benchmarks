@@ -56,116 +56,12 @@ The main performance graphs are summarized below, with one figure per dataset:
 
 ![glove-100-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-100-angular.png)
 
-
 ## Run the benchmarks
 
-To reproduce these results, simply create a new AWS EC2 instance (Ubuntu 20.04) with the following AWS CLI command:
-
-```bash
-aws ec2 create-security-group --group-name KmbSsh --description "SSH access for Kernel Matrix Benchmarks"
-aws ec2 authorize-security-group-ingress --group-name KmbSsh --protocol tcp --port 22 --cidr 0.0.0.0/0
-aws ec2 request-spot-instances \
-  --type "persistent" \
-  --instance-interruption-behavior "stop" \
-  --launch-specification file://kmb-instance.json \
-  --tag-specification 'ResourceType=spot-instances-request,Tags=[{Key=Task,Value=KMB},{Key=Hardware,Value=CPU}]'
-```
-
-Before running the script above, you will need to upload
-the specifications below in the file `kmb-instance.json` through the AWS CLI web interface:
-
-```json
-{
-  "ImageId": "ami-04505e74c0741db8d",
-  "KeyName": "kernel-matrix-benchmarks",
-  "InstanceType": "r5b.large",
-  "Placement": {
-    "AvailabilityZone": "us-east-1c"
-  },
-  "BlockDeviceMappings": [
-    {
-      "DeviceName": "/dev/sda1",
-      "Ebs": {
-        "DeleteOnTermination": false,
-        "VolumeSize": 20,
-        "VolumeType": "gp2"
-      }
-    }
-  ],
-  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gKc3VkbyAtdSB1YnVudHUgdG11eCBzZXQgcmVtYWluLW9uLWV4aXQgb24K"
-}
-```
-
-This reads, with comments:
-
-```js
-{
-  "ImageId": "ami-04505e74c0741db8d",  // Ubuntu 20.04, at least in us-east-1
-  "KeyName": "kernel-matrix-benchmarks", // Name of your AWS encryption key
-  // Suggested instances:
-  // R5b instances = GPU: None
-  //                 CPU: 2nd generation Intel Xeon Scalable (Cascade Lake),
-  //                      which supports AVX-512 (advanced SIMD instructions). 
-  //                 + Lots of RAM.
-  "InstanceType": "r5b.large",  // spot price ~ $0.02/h, 2vCPU, 16Gb RAM
-  // "InstanceType": "r5b.4xlarge",  // spot price ~ $0.17/h, 16vCPU, 128Gb RAM
-  // "InstanceType": "r5b.16xlarge",  // spot price ~ $0.70/h, 64vCPU, 512Gb RAM
-  //
-  // P3 instances = GPU: Tesla V100 with 16Gb "RAM"/GPU,
-  //                CPU: Intel Xeon E5-2686 v4 (Broadwell)
-  //                     which supports AVX and AVX2 but not AVX-512.
-  // "InstanceType": "p3.2xlarge",  // spot price ~ $0.92/h, 1GPU, 8vCPU, 61Gb RAM
-  "Placement": {
-    "AvailabilityZone": "us-east-1c"  // North Virginia, default option
-  },
-  "BlockDeviceMappings": [  // "Hard drive"
-    {
-      "DeviceName": "/dev/sda1",
-      "Ebs": {
-        "DeleteOnTermination": false,  // Just in case we want to inspect things
-        "VolumeSize": 20,  // 20Gb storage space
-        "VolumeType": "gp2"
-      }
-    }
-  ],
-  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gKc3VkbyAtdSB1YnVudHUgdG11eCBzZXQgcmVtYWluLW9uLWV4aXQgb24K"
-}
-```
-
-Please note that the user data is a base64 encoding of the startup script below (`base64 -w 0 startup.sh`):
-
-```bash
-#!/bin/bash
-cd /home/ubuntu
-sudo -u ubuntu git clone https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks.git
-cd kernel-matrix-benchmarks
-sudo -u ubuntu tmux new-session -d ./create_website_AWS.sh
-sudo -u ubuntu tmux set remain-on-exit on
-```
-
-When connected to the cloud instance via ssh, you can monitor progress with:
-
-- `tmux a`, to get access to the script above.
-- `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
-
-Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`.
-Download it on your local machine with:
-
-```bash
-scp -i "kernel-matrix-benchmarks.pem" ubuntu@....amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
-```
-
-In the command above:
-
-- `kernel-matrix-benchmarks.pem` is the encryption key to your instance.
-- `....amazonaws.com` is the id of your instance.
-
-Finally, unzip the file `website.zip` and open `website/index.html` to inspect your results.
-
-## Install
+### Install
 
 The only dependencies are Python (tested with 3.6) and Docker.
-To install them on a new AWS instance:
+To install them on a fresh Ubuntu instance:
 
 1. Update the list of packages with `sudo apt update`.
 2. Install the Python package manager with `sudo apt install python3-pip`.
@@ -180,7 +76,7 @@ Then:
 3. Run `pip3 install -r requirements.txt`.
 4. Run `python3 install.py` to build all the libraries inside Docker containers (this can take a while, like 10-30 minutes).
 
-## Running
+### Running
 
 1. Run `python3 run.py` (this can take an extremely long time, potentially days).
    Note that with Docker, the root user owns all the output files.
@@ -191,6 +87,62 @@ You can customize the algorithms and datasets if you want to:
 - Check that `algos.yaml` contains the parameter settings that you want to test
 - To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
 - To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
+
+### On the Amazon cloud
+
+To reproduce these results in the cloud:
+
+1. Create an account on [AWS EC2](https://aws.amazon.com/aws/ec2).
+
+2. Log in to the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home?region=us-east-1).
+
+3. Use the "Actions" button in the upper-right corner of the window to upload
+  the specifications file [`kmb-instance.json`](kmb-instance.json) in your CloudShell session.
+  You may find comments and alternative options in [`kmb-instance-full.json`](kmb-instance-full.json).
+
+4. Create a new instance (Ubuntu 20.04) with the following AWS CloudShell command:
+
+```bash
+aws ec2 create-security-group \
+  --group-name KmbSsh \
+  --description "SSH access for Kernel Matrix Benchmarks"
+aws ec2 authorize-security-group-ingress \
+  --group-name KmbSsh \
+  --protocol tcp \
+  --port 22 \
+  --cidr 0.0.0.0/0
+aws ec2 request-spot-instances \
+  --type "persistent" \
+  --instance-interruption-behavior "stop" \
+  --launch-specification file://kmb-instance.json \
+  --tag-specification 'ResourceType=spot-instances-request,Tags=[{Key=Task,Value=KmbCPU}]'
+```
+
+5. On startup, the instance will automatically install the required dependencies
+  and run the [`create_website_AWS.sh`](create_website_AWS.sh) script.
+
+6. When connected to the cloud instance via ssh, you can monitor progress with:
+
+  - `tmux a`, to get access to the script above.
+  - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
+
+7. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download it on your local machine with:
+
+```bash
+scp -i "kernel-matrix-benchmarks.pem" ubuntu@....amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
+```
+
+  Where `kernel-matrix-benchmarks.pem` is your [encryption key](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:) and `....amazonaws.com` is the id of your instance.
+
+8. Finally, unzip the file `website.zip` and open `website/index.html` to inspect your results.
+
+Please note that the AWS Console allows you to keep track of your
+[running instances](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:v=3),
+[available storage volumes](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Volumes:),
+[current requests for Spot instances](https://console.aws.amazon.com/ec2sp/v2/home?region=us-east-1#/spot)
+and [billing information](https://console.aws.amazon.com/billing/home?region=us-east-1#/).
+Once you are done with your instance,
+**don't forget to cancel your Spot request, terminate your instances and destroy your storage volumes**.
 
 
 ## Including your algorithm

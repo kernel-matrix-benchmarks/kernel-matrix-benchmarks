@@ -1,0 +1,22 @@
+{
+  "ImageId": "ami-04505e74c0741db8d",
+  "KeyName": "kernel-matrix-benchmarks",
+  "InstanceType": "r5b.large",
+  "SecurityGroups": [
+    "KmbSsh"
+  ],
+  "Placement": {
+    "AvailabilityZone": "us-east-1c"
+  },
+  "BlockDeviceMappings": [
+    {
+      "DeviceName": "/dev/sda1",
+      "Ebs": {
+        "DeleteOnTermination": false,
+        "VolumeSize": 20,
+        "VolumeType": "gp2"
+      }
+    }
+  ],
+  "UserData": "IyEvYmluL2Jhc2gKY2QgL2hvbWUvdWJ1bnR1CnN1ZG8gLXUgdWJ1bnR1IGdpdCBjbG9uZSBodHRwczovL2dpdGh1Yi5jb20va2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzL2tlcm5lbC1tYXRyaXgtYmVuY2htYXJrcy5naXQKY2Qga2VybmVsLW1hdHJpeC1iZW5jaG1hcmtzCnN1ZG8gLXUgdWJ1bnR1IHRtdXggbmV3LXNlc3Npb24gLWQgLi9jcmVhdGVfd2Vic2l0ZV9BV1Muc2gKc3VkbyAtdSB1YnVudHUgdG11eCBzZXQgcmVtYWluLW9uLWV4aXQgb24K"
+}
