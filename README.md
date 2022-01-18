@@ -117,7 +117,6 @@ aws ec2 request-spot-instances \
 
 5. On startup, the instance will automatically clone this repository
   and run the [`create_website_AWS.sh`](create_website_AWS.sh) script.
-
 6. Log in to the cloud instance via ssh, with 
 
 ```bash
@@ -128,10 +127,10 @@ ssh -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazona
 
 7. You can monitor progress with:
 
-  - `tmux a`, to get access to the script above.
+  - `tmux a` to get access to the terminal running [`create_website_AWS.sh`](create_website_AWS.sh).
   - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
 
-8. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download it on your local machine with:
+8. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download the archive on your local machine with:
 
 ```bash
 scp -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazonaws.com:/home/ubuntu/kernel-matrix-benchmarks/website.zip website.zip
