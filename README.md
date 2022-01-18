@@ -9,19 +9,26 @@ Specifically, we are interested in **three main computations**:
 
 **1. Kernel matrix products.** Let us consider:
 
-- A **kernel** function ![k(x,y)](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+k%28x%2Cy%29)
-  defined for any pair of points in dimension D.
-- N **target** points x<sub>1</sub>, ..., x<sub>N</sub> in dimension D, encoded as a `(N, D)` array.
-- M **source** points y<sub>1</sub>, ..., y<sub>M</sub> in dimension D, encoded as a `(M, D)` array.
-- M **source** signals v<sub>1</sub>, ..., v<sub>M</sub> in dimension E, encoded as a `(M, E)` array.
+- A **kernel** function k(x,y) defined for any pair of points in dimension D - for instance,
+  a Gaussian kernel.
+- N **target** points x<sub>1</sub>, ..., x<sub>N</sub> in dimension D, encoded as a `(N,D)` array.
+- M **source** points y<sub>1</sub>, ..., y<sub>M</sub> in dimension D, encoded as a `(M,D)` array.
+- M **source** signals v<sub>1</sub>, ..., v<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
+  E=1 in most applications.
 
-Then, we compute the .
+Then, we compute the `(N,E)` array of **target** signals 
+a<sub>1</sub>, ..., a<sub>N</sub> with, for all i between 1 and N:
 
-This operation can be understood as the matrix-matrix product between the `(N, M)` **kernel matrix**.
+![a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j .](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+.)
 
-In most applications, the dimension E of the signal vectors v<sub>j</sub> is equal to 1:
-
-
+We understand this computation as the matrix-matrix product between the `(N,M)` 
+**kernel matrix** K<sub>i,j</sub> = k(x<sub>i</sub>, y<sub>j</sub>) and
+the `(M,E)` matrix of source signals.
+Depending on the context, this operation is known as
+a kernel **density** estimation, a **N-body** computation
+or a point/kernel/spline **convolution**.
+Special cases also include the (non-uniform) Discrete **Fourier Transform**
+and operators that are relevant to the **Boundary Element Method**.
 
 **2. Kernel matrix solver.**
 
