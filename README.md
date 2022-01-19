@@ -13,7 +13,7 @@ Specifically, we are interested in **three types of computations**:
   a Gaussian kernel.
 - N **target** points x<sub>1</sub>,..., x<sub>N</sub> in dimension D, encoded as a `(N,D)` array.
 - M **source** points y<sub>1</sub>,..., y<sub>M</sub> in dimension D, encoded as a `(M,D)` array.
-- M **source** signals v<sub>1</sub>,..., v<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
+- M **source** signals b<sub>1</sub>,..., b<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
   E=1 in most applications.
 
 Then, we compute the `(N,E)` array of **target** signals 
@@ -21,8 +21,8 @@ a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+." 
-alt="a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j .">
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+." 
+alt="a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,b_j .">
 </p>
 
 We understand this computation as the product between the `(N,M)` 
@@ -31,7 +31,7 @@ the `(M,E)` matrix of source signals.
 Depending on the context, this operation is known as
 a kernel **density** estimation, a **N-body** computation
 or a point/kernel/spline **convolution**.
-Special cases also include the (non-uniform) Discrete **Fourier Transform**
+Special cases also include the non-uniform Discrete **Fourier Transform**
 and operators that are relevant to the **Boundary Element Method**.
 
 **2. Attention layers.** With the same notations, row-normalized kernel
@@ -41,37 +41,37 @@ a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Cfrac%7B+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+%7D%7B%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%7D." 
-alt="a_i \gets \frac{ \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j }{\sum_{j=1}^\text{M} k(x_i,y_j)}.">
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Cfrac%7B+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+%7D%7B%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%7D." 
+alt="a_i \gets \frac{ \sum_{j=1}^\text{M} k(x_i,y_j)\,b_j }{\sum_{j=1}^\text{M} k(x_i,y_j)}.">
 </p>
 
-This operation is fundamental in [transformer](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model))
-architectures for e.g. natural language processing.
-In this context, we often talk of **query** vectors x<sub>i</sub>,
-**key** vectors y<sub>j</sub> and **value** vectors v<sub>j</sub>
+This operation is fundamental in [**transformer**](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model))
+architectures for e.g. natural **language** processing.
+In this context, we often talk about **query** vectors x<sub>i</sub>,
+**key** vectors y<sub>j</sub> and **value** vectors b<sub>j</sub>
 with an exponential kernel:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+k%28x_i%2C+y_j%29+%3D+%5Cexp%5Cbig%28%5Clangle+x_i%2C+y_j+%5Crangle_%7B%5Cmathbb%7BR%7D%5E%5Ctext%7BD%7D%7D+%2F+%5Csqrt%7B%5Ctext%7BD%7D%7D+%5Cbig%29."
-alt="k(x_i, y_j) = \exp\big(\langle x_i, y_j \rangle_{\mathbb{R}^\text{D}} / \sqrt{\text{D}} \big).">
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+k%28x_i%2C+y_j%29+%3D+%5Cexp%5Cbig%28%5Clangle+x_i%2C+y_j+%5Crangle_%7B%5Cmathbb%7BR%7D%5E%5Ctext%7BD%7D%7D+%5Cbig%29."
+alt="k(x_i, y_j) = \exp\big(\langle x_i, y_j \rangle_{\mathbb{R}^\text{D}} \big).">
 </p>
 
 **3. Kernel matrix solver.**
 Finally, if N=M and the **output** of the kernel matrix product
-a<sub>1</sub>,..., a<sub>N</sub> is known,
-we are interested in the `(M,E)` array `v` solution of the
-matrix equation "K<sub>i,j</sub>v<sub>j</sub> = a<sub>i</sub>".
-In other words, we intend to compute "v = K<sup>-1</sup>a" such that:
+a<sub>1</sub>,..., a<sub>N</sub> is **known**,
+we are interested in the `(M,E)` array `b` solution of the
+matrix equation "K<sub>i,j</sub>b<sub>j</sub> = a<sub>i</sub>".
+In other words, we intend to compute "b = K<sup>-1</sup>a" such that:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+%3D+a_i."
-alt="\sum_{j=1}^\text{M} k(x_i,y_j)\,v_j = a_i.">
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+%3D+a_i."
+alt="\sum_{j=1}^\text{M} k(x_i,y_j)\,b_j = a_i.">
 </p>
 
-This operation is a key bottleneck for algorithms based on Gaussian processes,
-Kriging, spline interpolation, kernel regression and the Boundary Element Method.
+This operation is a key bottleneck for algorithms based on **Gaussian processes**,
+**Kriging**, **spline** interpolation, **kernel** regression and the **Boundary Element Method**.
 
 
 ## Scope
@@ -79,12 +79,12 @@ Kriging, spline interpolation, kernel regression and the Boundary Element Method
 This project contains tools to benchmark various implementations of these operations in a wide range of settings:
 
 - We use both standard **CPU** hardware and massively parallel **GPU** accelerators.
-- We work in spaces of varying dimension (1 to 1,000) and geometry (Euclidean, curved, discrete, etc.).
-- We study a wide range of kernels that may be oscillating, exhibit singularities, etc.
+- We work in spaces of varying dimension (D=1 to D=1,000) and geometry (Euclidean, curved, discrete, etc.).
+- We study a wide range of kernels k(x<sub>i</sub>, y<sub>j</sub>) that may be oscillating, exhibit singularities, etc.
 - We benchmark both **exact** and **approximate** methods.
 
 Our main purpose is to establish a clear reference on the state-of-the-art for kernel computations.
-We hope that this work will promote cross-pollination between communities.
+We hope that this work will promote cross-pollination between related fields.
 
 Please note that this ongoing benchmark is **open to all contributions**.
 We have pre-generated data sets with relevant evaluation metrics and provide a Docker container for each algorithm. We also rely on a [test suite](https://travis-ci.org/kernel-matrix-benchmarks/kernel-matrix-benchmarks) to make sure that every algorithm works.
@@ -257,7 +257,7 @@ Diverse use cases:
 - We showcase challenging datasets from all fields that rely on kernel computations.
 - We benchmark both pre-computation and query times.
 - We support both CPU and GPU implementations.
-- We try many different values of parameters for each library -- and ignore the points that are not on the [precision-performance frontier](https://en.wikipedia.org/wiki/Pareto_front).
+- We try many different values of parameters for each library and ignore the points that are not on the [precision-performance frontier](https://en.wikipedia.org/wiki/Pareto_front).
 
 ## Authors
 
