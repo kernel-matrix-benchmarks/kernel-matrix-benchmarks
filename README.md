@@ -1,23 +1,23 @@
-# Benchmarking kernel matrix vector products and inversions
+# Benchmarking kernel matrix vector products, inversions and attention layers
 
 [![Build Status](https://img.shields.io/github/workflow/status/kernel-matrix-benchmarks/kernel-matrix-benchmarks/kernel%20matrix%20benchmarks?style=flat-square)](https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/actions?query=workflow:benchmarks)
 
 Computations with kernel matrices are a key bottleneck in many applied fields, from numerical physics to machine learning.
 This website compares acceleration methods for these problems in an objective way.
 
-Specifically, we are interested in **three main computations**:
+Specifically, we are interested in **three types of computations**:
 
 **1. Kernel matrix products.** Let us consider:
 
-- A **kernel** function k(x,y) defined for any pair of points in dimension D - for instance,
+- A **kernel** function k(x,y) defined for any pair of points in dimension D, e.g.
   a Gaussian kernel.
-- N **target** points x<sub>1</sub>, ..., x<sub>N</sub> in dimension D, encoded as a `(N,D)` array.
-- M **source** points y<sub>1</sub>, ..., y<sub>M</sub> in dimension D, encoded as a `(M,D)` array.
-- M **source** signals v<sub>1</sub>, ..., v<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
+- N **target** points x<sub>1</sub>,..., x<sub>N</sub> in dimension D, encoded as a `(N,D)` array.
+- M **source** points y<sub>1</sub>,..., y<sub>M</sub> in dimension D, encoded as a `(M,D)` array.
+- M **source** signals v<sub>1</sub>,..., v<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
   E=1 in most applications.
 
 Then, we compute the `(N,E)` array of **target** signals 
-a<sub>1</sub>, ..., a<sub>N</sub> with, for all i between 1 and N:
+a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
 <p align="center">
 <img src=
@@ -25,7 +25,7 @@ a<sub>1</sub>, ..., a<sub>N</sub> with, for all i between 1 and N:
 alt="a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j .">
 </p>
 
-We understand this computation as the matrix-matrix product between the `(N,M)` 
+We understand this computation as the product between the `(N,M)` 
 **kernel matrix** K<sub>i,j</sub> = k(x<sub>i</sub>, y<sub>j</sub>) and
 the `(M,E)` matrix of source signals.
 Depending on the context, this operation is known as
@@ -34,10 +34,45 @@ or a point/kernel/spline **convolution**.
 Special cases also include the (non-uniform) Discrete **Fourier Transform**
 and operators that are relevant to the **Boundary Element Method**.
 
-**2. Kernel matrix solver.**
+**2. Attention layers.** With the same notations, row-normalized kernel
+products or "attention" layers correspond to the computation
+of the `(N,E)` array of **target** values
+a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
+<p align="center">
+<img src=
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Cfrac%7B+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+%7D%7B%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%7D." 
+alt="a_i \gets \frac{ \sum_{j=1}^\text{M} k(x_i,y_j)\,v_j }{\sum_{j=1}^\text{M} k(x_i,y_j)}.">
+</p>
 
-**3. Attention layers.**
+This operation is fundamental in [transformer](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model))
+architectures for e.g. natural language processing.
+In this context, we often talk of **query** vectors x<sub>i</sub>,
+**key** vectors y<sub>j</sub> and **value** vectors v<sub>j</sub>
+with an exponential kernel:
+
+<p align="center">
+<img src=
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+k%28x_i%2C+y_j%29+%3D+%5Cexp%5Cbig%28%5Clangle+x_i%2C+y_j+%5Crangle_%7B%5Cmathbb%7BR%7D%5E%5Ctext%7BD%7D%7D+%2F+%5Csqrt%7B%5Ctext%7BD%7D%7D+%5Cbig%29."
+alt="k(x_i, y_j) = \exp\big(\langle x_i, y_j \rangle_{\mathbb{R}^\text{D}} / \sqrt{\text{D}} \big).">
+</p>
+
+**3. Kernel matrix solver.**
+Finally, if N=M and the **output** of the kernel matrix product
+a<sub>1</sub>,..., a<sub>N</sub> is known,
+we are interested in the `(M,E)` array `v` solution of the
+matrix equation "K<sub>i,j</sub>v<sub>j</sub> = a<sub>i</sub>".
+In other words, we intend to compute "v = K<sup>-1</sup>a" such that:
+
+<p align="center">
+<img src=
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cv_j+%3D+a_i."
+alt="\sum_{j=1}^\text{M} k(x_i,y_j)\,v_j = a_i.">
+</p>
+
+This operation is a key bottleneck for algorithms based on Gaussian processes,
+Kriging, spline interpolation, kernel regression and the Boundary Element Method.
+
 
 ## Scope
 
