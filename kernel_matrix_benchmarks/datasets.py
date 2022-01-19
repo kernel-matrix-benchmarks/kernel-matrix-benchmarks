@@ -1,3 +1,63 @@
+"""Code to create the input tables and ground truth results for our benchmarks.
+
+All datasets are hosted as HDF5 files at:
+"http://kernel-matrix-benchmarks.com/datasets/my-dataset-name.hdf5".
+
+A dataset file "f" contains the following attributes and tables:
+
+- f["source_points"] = (M,D) float64 array ("y").
+    The positions of the M source points y_j in dimension D.
+
+- f["target_points"] = (N,D) float64 array ("x").
+    The positions of the N target points x_i in dimension D.
+
+- f["source_signal"] = (M,E) float64 array ("b").
+    The M signal vectors b_j associated to each point y_j.
+
+- f["target_signal"] = (N,E) float64 array ("a").
+    The N signal vectors a_i associated to each point x_i.
+
+- f.attrs["point_type"] = "float"
+    For now, we only support real-valued vectors - but permutations and other
+    discrete objects may be supported in the future.
+
+- f.attrs["kernel"] = "absolute exponential" | "gaussian" | ...
+    A string identifier for the kernel function.
+    We assume that the data points are scaled so that we can use
+    the most simple formula for the kernel k(x, y), without any scaling constant.
+
+    For instance, "absolute exponential" refers to the kernel formula:
+        k(x, y) = exp(-|x - y|_2)
+    whereas "gaussian" refers to:
+        k(x, y) = exp(-|x - y|^2_2).
+
+- f.attrs["normalize_rows"] = True | [False]
+    If True, we normalize the rows of the kernel matrix so that they sum up to 1.
+    This is especially relevant for attention layers in transformer architectures,
+    which rely on a row-normalized exponential kernel.
+
+- f.attrs["same_points"] = True | [False]
+    If True, we assume that the array f["target_points"] is equal to f["source_points"],
+    i.e. M = N and x_i = y_i for all i in [1, N].
+
+- f.attrs["density_estimation"] = True | [False]
+    If True, we assume that f["source_signal"] is uniformly equal to 1:
+    the kernel product operation becomes a simple sum over the rows
+    of the kernel matrix.
+
+
+The four data arrays should be in correspondance with each other 
+up to float64 numerical precision, i.e.
+
+a[i] = sum_{j in range(M)} k(x[i], y[j]) * b[j]
+if  f.attrs["normalize_rows"] == False (default)
+
+or
+
+a[i] = sum_{j in range(M)} k(x[i], y[j]) * b[j] /  sum_{j in range(M)} k(x[i], y[j])
+if  f.attrs["normalize_rows"] == True (for attention layers).
+"""
+
 import h5py
 import numpy
 import os
@@ -31,8 +91,7 @@ def get_dataset(which):
 
     # We first try to download the dataset from our website:
     try:
-        # !!! replace by kernel-matrix-benchmarks.com once everything is ready
-        url = "http://ann-benchmarks.com/%s.hdf5" % which
+        url = "http://kernel-matrix-benchmarks.com/datasets/%s.hdf5" % which
         download(url, hdf5_fn)
 
     # If this fails, we try to download it from an "original" repository
@@ -44,13 +103,8 @@ def get_dataset(which):
             DATASETS[which](hdf5_fn)
     hdf5_f = h5py.File(hdf5_fn, "r")
 
-    # Here for backward compatibility, to ensure old datasets can still be used with newer versions:
-    # cast to integer because the json parser (later on) cannot interpret numpy integers.
-    dimension = (
-        int(hdf5_f.attrs["dimension"])
-        if "dimension" in hdf5_f.attrs
-        else len(hdf5_f["train"][0])
-    )
+    # Cast to integer because the json parser (later on) cannot interpret numpy integers.
+    dimension = int(hdf5_f["source_points"].shape[-1])
 
     return hdf5_f, dimension
 
@@ -60,19 +114,39 @@ def get_dataset(which):
 # just rely on the prepared datasets at http://ann-benchmarks.com
 
 
-# !!! Obsolete
-def write_output(train, test, fn, distance, point_type="float", count=100):
-    from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForceBLAS
+def write_output(
+    filename,
+    kernel,
+    source_points,
+    target_points=None,
+    source_signal=None,
+    point_type="float",
+    normalize_rows=False,
+):
+    """Write the dataset to a HDF5 file."""
+    from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForceProduct
 
-    n = 0
-    f = h5py.File(fn, "w")
-    f.attrs["type"] = "dense"
-    f.attrs["distance"] = distance
-    f.attrs["dimension"] = len(train[0])
+    f = h5py.File(filename, "w")
+
+    f.attrs["kernel"] = kernel
     f.attrs["point_type"] = point_type
-    print("train size: %9d * %4d" % train.shape)
-    print("test size:  %9d * %4d" % test.shape)
-    f.create_dataset("train", (len(train), len(train[0])), dtype=train.dtype)[:] = train
+
+    f["source_points"] = source_points
+
+    if target_points is None:
+        f["target_points"] = source_points
+        f.attrs["same_points"] = True
+    else:
+        f["target_points"] = target_points
+        f.attrs["same_points"] = False
+
+    if source_signal is None:
+        f["source_signal"] = numpy.ones((len(source_points), 1))
+        f.attrs["density_estimation"] = True
+    else:
+        f["source_signal"] = source_signal
+        f.attrs["density_estimation"] = False
+
     f.create_dataset("test", (len(test), len(test[0])), dtype=test.dtype)[:] = test
     neighbors = f.create_dataset("neighbors", (len(test), count), dtype="i")
     distances = f.create_dataset("distances", (len(test), count), dtype="f")
@@ -135,6 +209,9 @@ def write_sparse_output(train, test, fn, distance, dimension, count=100):
     f.close()
 
 
+# GloVE 25, 50, 100 and 200 ----------------------------------------------------
+
+
 def train_test_split(X, test_size=10000, dimension=None):
     import sklearn.model_selection
 
@@ -144,9 +221,6 @@ def train_test_split(X, test_size=10000, dimension=None):
     return sklearn.model_selection.train_test_split(
         X, test_size=test_size, random_state=1
     )
-
-
-# GloVE 25, 50, 100 and 200 ----------------------------------------------------
 
 
 def glove(out_fn, d):
@@ -230,10 +304,13 @@ def fashion_mnist(out_fn):
 # Full list of supported datasets ----------------------------------------------
 
 DATASETS = {
-    "mnist-784-euclidean": mnist,
-    "fashion-mnist-784-euclidean": fashion_mnist,
-    "glove-25-angular": lambda out_fn: glove(out_fn, 25),
-    "glove-50-angular": lambda out_fn: glove(out_fn, 50),
-    "glove-100-angular": lambda out_fn: glove(out_fn, 100),
-    "glove-200-angular": lambda out_fn: glove(out_fn, 200),
+    "uniform-sphere-1k-3-absolute-exponential": uniform_sphere(
+        1000, 3, "absolute-exponential"
+    ),
+    # "mnist-784-euclidean": mnist,
+    # "fashion-mnist-784-euclidean": fashion_mnist,
+    # "glove-25-angular": lambda out_fn: glove(out_fn, 25),
+    # "glove-50-angular": lambda out_fn: glove(out_fn, 50),
+    # "glove-100-angular": lambda out_fn: glove(out_fn, 100),
+    # "glove-200-angular": lambda out_fn: glove(out_fn, 200),
 }
