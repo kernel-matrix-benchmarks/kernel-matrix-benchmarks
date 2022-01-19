@@ -1,99 +1,115 @@
 # This file is processed in kernel_matrix_benchmarks/algorithms/definitions.py
 # by the routine "get_definitions(...)"
 
-float: # Point coordinates = vectors of floats
-  any: # Any metric
-    # Full syntax example:
-    nicelibrary:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-nicelibrary
-      module: kernel_matrix_benchmarks.algorithms.nicelibrary # Python class
-      constructor: NiceLibrary # Python class name
-      base-args: ["@kernel"] # @dimension, ...
-      run-groups:
-        sptag:
-          # When @args is a list, the result is the Cartesian product of all of
-          # the things it contains; entries that aren't a list will be treated
-          # as lists of length one.
-          args: [["BKT", "KDT"]]
-          # This run group will produce two algorithm instances:
-          # NiceLibrary("gaussian", "BKT") and NiceLibrary("gaussian", "KDT"),
-          # each of which will be used to run 6 different queries.
-          query-args: [[100, 200, 400, 1000, 2000, 4000]]
+product: # Task = kernel matrix product
+  float: # Point coordinates = vectors of floats
+    any: # Any kernel
+      # Full syntax example:
+      nicelibrary:
+        disabled: true
+        docker-tag: kernel-matrix-benchmarks-nicelibrary
+        module: kernel_matrix_benchmarks.algorithms.nicelibrary # Python class
+        constructor: NiceLibrary # Python class name
+        base-args: ["@kernel"] # @dimension, ...
+        run-groups:
+          sptag:
+            # When @args is a list, the result is the Cartesian product of all of
+            # the things it contains; entries that aren't a list will be treated
+            # as lists of length one.
+            args: [["BKT", "KDT"]]
+            # This run group will produce two algorithm instances:
+            # NiceLibrary("gaussian", "BKT") and NiceLibrary("gaussian", "KDT"),
+            # each of which will be used to run 6 different queries.
+            query-args: [[100, 200, 400, 1000, 2000, 4000]]
 
-        base:
-          # When @args is a dictionary, algorithm instances will be generated
-          # by taking the Cartesian product of all of its values.
-          arg-groups:
-            - { "tuneK": 10, "desiredRecall": [0.99, 0.97, 0.9, 0.5, 0.2, 0.1] }
-            - False
-          # This run group produces six algorithm instances:
-          # NiceLibrary("gaussian", {"tuneK": 10,
-          # "desiredRecall": 0.99}), NiceLibrary("angular",
-          # {"tuneK": 10, "desiredRecall": 0.97}), and so on up to
-          # NiceLibrary("angular", {"tuneK": 10, "desiredRecall":
-          # 0.1}).
+          base:
+            # When @args is a dictionary, algorithm instances will be generated
+            # by taking the Cartesian product of all of its values.
+            arg-groups:
+              - {
+                  "tuneK": 10,
+                  "desiredRecall": [0.99, 0.97, 0.9, 0.5, 0.2, 0.1],
+                }
+              - False
+            # This run group produces six algorithm instances:
+            # NiceLibrary("gaussian", {"tuneK": 10,
+            # "desiredRecall": 0.99}), NiceLibrary("angular",
+            # {"tuneK": 10, "desiredRecall": 0.97}), and so on up to
+            # NiceLibrary("angular", {"tuneK": 10, "desiredRecall":
+            # 0.1}).
 
-        M-4:
-          arg-groups:
-            - { "M": 4, "efConstruction": 500 }
-          query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
-        M-8:
-          arg-groups:
-            - { "M": 8, "efConstruction": 500 }
-          query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
+          M-4:
+            arg-groups:
+              - { "M": 4, "efConstruction": 500 }
+            query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
+          M-8:
+            arg-groups:
+              - { "M": 8, "efConstruction": 500 }
+            query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
 
-    dummy:
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.dummy_algo
-      constructor: DummyAlgoSt
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+      dummy-product:
+        docker-tag: kernel-matrix-benchmarks-sklearn
+        module: kernel_matrix_benchmarks.algorithms.dummy_algo
+        constructor: DummyProduct
+        base-args: []
+        run-groups:
+          empty:
+            args: []
 
-    bruteforce:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.bruteforce
-      constructor: BruteForce
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+      bruteforce-product-blas:
+        disabled: false
+        docker-tag: kernel-matrix-benchmarks-sklearn
+        module: kernel_matrix_benchmarks.algorithms.bruteforce
+        constructor: BruteForceProductBLAS
+        base-args: ["@kernel"]
+        run-groups:
+          empty:
+            args: []
 
-    bruteforce-blas:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.bruteforce
-      constructor: BruteForceBLAS
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+  # We also support different types...
+  bit:
+    # And metrics:
+    hamming:
+      mih:
+        disabled: true
+        docker-tag: kernel-matrix-benchmarks-mih
+        module: kernel_matrix_benchmarks.algorithms.subprocess
+        constructor: BitSubprocessPrepared
+        base-args: [["mih/bin/mihwrapper"]]
+        run-groups:
+          base:
+            # Note that MIH assumes that 5 <= dimension / chunks <= 37 and segfaults otherwise.
+            # This parameter space is explored below using the `chunk-factor`.
+            # A factor of 0 means that dimension / chunks = 5 which proceeds linearly to
+            # dimension / chunks = 37 for a factor of 1.
+            # The r parameter denotes a reordering with n / r steps. If r is 0, no reordering
+            # takes places. Otherwise, n / r points from the dataset are used for a
+            # re-ording process. MIH requires either r = 0 or r >= 2.
+            args:
+              {
+                "d": "@dimension",
+                "r": [0, 2, 3],
+                "chunk-factor": [0.2, 0.5, 0.8],
+              }
 
-# We also support different types...
-bit:
-  # And metrics:
-  hamming:
-    mih:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-mih
-      module: kernel_matrix_benchmarks.algorithms.subprocess
-      constructor: BitSubprocessPrepared
-      base-args: [["mih/bin/mihwrapper"]]
-      run-groups:
-        base:
-          # Note that MIH assumes that 5 <= dimension / chunks <= 37 and segfaults otherwise.
-          # This parameter space is explored below using the `chunk-factor`.
-          # A factor of 0 means that dimension / chunks = 5 which proceeds linearly to
-          # dimension / chunks = 37 for a factor of 1.
-          # The r parameter denotes a reordering with n / r steps. If r is 0, no reordering
-          # takes places. Otherwise, n / r points from the dataset are used for a
-          # re-ording process. MIH requires either r = 0 or r >= 2.
-          args:
-            {
-              "d": "@dimension",
-              "r": [0, 2, 3],
-              "chunk-factor": [0.2, 0.5, 0.8],
-            }
+solver: # Task = solve a kernel linear system
+  float: # Point coordinates = vectors of floats
+    any: # Any kernel
+      dummy-solver:
+        docker-tag: kernel-matrix-benchmarks-sklearn
+        module: kernel_matrix_benchmarks.algorithms.dummy_algo
+        constructor: DummySolver
+        base-args: []
+        run-groups:
+          empty:
+            args: []
+
+      bruteforce-solver-blas:
+        disabled: false
+        docker-tag: kernel-matrix-benchmarks-sklearn
+        module: kernel_matrix_benchmarks.algorithms.bruteforce
+        constructor: BruteForceSolverBLAS
+        base-args: ["@kernel"]
+        run-groups:
+          empty:
+            args: []

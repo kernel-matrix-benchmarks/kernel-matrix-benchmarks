@@ -104,31 +104,30 @@ def list_algorithms(definition_file):
     definitions = _get_definitions(definition_file)
 
     print("The following algorithms are supported...")
-    for point in definitions:
-        print('\t... for the point type "%s"...' % point)
-        for metric in definitions[point]:
-            print('\t\t... and the distance metric "%s":' % metric)
-            for algorithm in definitions[point][metric]:
-                print("\t\t\t%s" % algorithm)
+    for task in definitions:
+        print('\t... for the task "%s"...' % task)
+        for point in definitions[task]:
+            print('\t\t... for the point type "%s"...' % point)
+            for metric in definitions[task][point]:
+                print('\t\t\t... and the distance metric "%s":' % metric)
+                for algorithm in definitions[task][point][metric]:
+                    print("\t\t\t\t%s" % algorithm)
 
 
 def get_unique_algorithms(definition_file):
     """Removes doublons from "algos.yaml"."""
     definitions = _get_definitions(definition_file)
     algos = set()
-    for point in definitions:
-        for metric in definitions[point]:
-            for algorithm in definitions[point][metric]:
-                algos.add(algorithm)
+    for task in definitions:
+        for point in definitions[task]:
+            for metric in definitions[task][point]:
+                for algorithm in definitions[task][point][metric]:
+                    algos.add(algorithm)
     return list(sorted(algos))
 
 
 def get_definitions(
-    definition_file,
-    dimension,
-    point_type="float",
-    distance_metric="euclidean",
-    count=10,
+    definition_file, dimension, task="product", point_type="float", kernel="gaussian",
 ):
     # Step 1: Load the .yaml file --------------------------
     # Load "algos.yaml" using the standard .yaml parser:
@@ -136,12 +135,12 @@ def get_definitions(
 
     algorithm_definitions = {}
 
-    # Load the algorithms that support "any" metric:
-    if "any" in definitions[point_type]:
-        algorithm_definitions.update(definitions[point_type]["any"])
+    # Load the algorithms that support "any" kernel:
+    if "any" in definitions[task][point_type]:
+        algorithm_definitions.update(definitions[task][point_type]["any"])
 
-    # And add the algorithms that "only" support the target metric, if any:
-    algorithm_definitions.update(definitions[point_type].get(distance_metric, {}))
+    # And add the algorithms that "only" support the target kernel, if any:
+    algorithm_definitions.update(definitions[task][point_type].get(kernel, {}))
 
     # Step 2: Process the experiments/libraries ---------------------
     definitions = []
@@ -227,8 +226,7 @@ def get_definitions(
 
                 # Magic keywords:
                 vs = {
-                    "@count": count,  # !!! We should replace this !!!
-                    "@metric": distance_metric,
+                    "@kernel": kernel,
                     "@dimension": dimension,
                 }
                 aargs = [_substitute_variables(arg, vs) for arg in aargs]
