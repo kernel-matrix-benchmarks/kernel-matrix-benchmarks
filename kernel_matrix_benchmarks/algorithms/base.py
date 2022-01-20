@@ -45,8 +45,8 @@ class BaseProduct(BaseAlgorithm):
         Returns:
             (E,) vector: output of the computation at point x_i.
         """
-
-        raise NotImplementedError()
+        self.batch_query(target_point.reshape(1, -1))  # (D,) -> (1,D) query
+        return self.get_batch_results.reshape(-1)  # (1,D) -> (D,) output
 
     def batch_query(self, target_points):
         """Provide all queries at once and let the algorithm figure out how to handle it.

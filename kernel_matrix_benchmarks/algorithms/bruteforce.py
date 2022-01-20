@@ -1,119 +1,80 @@
 from __future__ import absolute_import
-import numpy
+import numpy as np
 import sklearn.neighbors
 from kernel_matrix_benchmarks.distance import metrics as pd
-from kernel_matrix_benchmarks.algorithms.base import BaseANN
+from kernel_matrix_benchmarks.algorithms.base import BaseProduct
+
+kernel_functions = {
+    "gaussian": lambda sqdists: np.exp(-sqdists),
+    "absolute exponential": lambda sqdists: np.exp(-np.sqrt(np.maximum(sqdists, 0))),
+}
 
 
-class BruteForce(BaseANN):
-    """Bruteforce implementation, based on scikit-learn."""
-
-    def __init__(self, metric):
-        if metric not in ("angular", "euclidean", "hamming"):
-            raise NotImplementedError("BruteForce doesn't support metric %s" % metric)
-        self._metric = metric
-        self.name = "BruteForce()"
-
-    def fit(self, X):
-        metric = {"angular": "cosine", "euclidean": "l2", "hamming": "hamming"}[
-            self._metric
-        ]
-        self._nbrs = sklearn.neighbors.NearestNeighbors(
-            algorithm="brute", metric=metric
-        )
-        self._nbrs.fit(X)
-
-    def query(self, v, n):
-        return list(self._nbrs.kneighbors([v], return_distance=False, n_neighbors=n)[0])
-
-    def query_with_distances(self, v, n):
-        (distances, positions) = self._nbrs.kneighbors(
-            [v], return_distance=True, n_neighbors=n
-        )
-        return zip(list(positions[0]), list(distances[0]))
-
-
-class BruteForceBLAS(BaseANN):
+class BruteForceProductBLAS(BaseProduct):
     """Bruteforce implementation, using BLAS through NumPy."""
 
-    def __init__(self, metric, precision=numpy.float32):
-        if metric not in ("angular", "euclidean", "hamming", "jaccard"):
+    def __init__(self, kernel="gaussian", normalize_rows=False, precision=np.float64):
+        if kernel not in kernel_functions:
             raise NotImplementedError(
-                "BruteForceBLAS doesn't support metric %s" % metric
+                f"BruteForceProductBLAS doesn't support kernel {kernel}."
             )
-        elif metric == "hamming" and precision != numpy.bool:
-            raise NotImplementedError(
-                "BruteForceBLAS doesn't support precision"
-                " %s with Hamming distances" % precision
+        self.kernel = kernel
+        self.precision = precision
+        self.normalize_rows = normalize_rows
+        self.name = "BruteForceProductBLAS()"
+
+    def fit(self, source_points, source_signal=None):
+        """Pre-computes the Euclidean norms of the source points."""
+
+        # Cast to the required precision and make sure
+        # that everyone is contiguous for top performance:
+        self.source_points = np.ascontiguousarray(source_points, dtype=self.precision)
+        if source_signal is None:
+            self.source_signal = None
+        else:
+            self.source_signal = np.ascontiguousarray(
+                source_signal, dtype=self.precision
             )
-        self._metric = metric
-        self._precision = precision
-        self.name = "BruteForceBLAS()"
 
-    def fit(self, X):
-        """Initialize the search index."""
-        if self._metric == "angular":
-            # precompute (squared) length of each vector
-            lens = (X ** 2).sum(-1)
-            # normalize index vectors to unit length
-            X /= numpy.sqrt(lens)[..., numpy.newaxis]
-            self.index = numpy.ascontiguousarray(X, dtype=self._precision)
-        elif self._metric == "hamming":
-            # Regarding bitvectors as vectors in l_2 is faster for blas
-            X = X.astype(numpy.float32)
-            # precompute (squared) length of each vector
-            lens = (X ** 2).sum(-1)
-            self.index = numpy.ascontiguousarray(X, dtype=numpy.float32)
-            self.lengths = numpy.ascontiguousarray(lens, dtype=numpy.float32)
-        elif self._metric == "euclidean":
-            # precompute (squared) length of each vector
-            lens = (X ** 2).sum(-1)
-            self.index = numpy.ascontiguousarray(X, dtype=self._precision)
-            self.lengths = numpy.ascontiguousarray(lens, dtype=self._precision)
-        elif self._metric == "jaccard":
-            self.index = X
+        # Pre-compute the squared Euclidean norm of each point:
+        self.source_sqnorms = (self.source_points ** 2).sum(-1)
+
+    def batch_query(self, target_points):
+
+        # Cast to the required precision and as contiguous array for top performance:
+        # TODO: Check if target_points being contiguous vs its transpose
+        #       being contiguous is faster.
+        target_points = np.ascontiguousarray(target_points, dtype=self.precision)
+        target_sqnorms = (target_points ** 2).sum(-1)
+
+        sqdists = (
+            self.source_sqnorms
+            + target_sqnorms
+            - 2 * self.source_points @ target_points.T
+        )
+        K_ij = kernel_functions[self.kernel](sqdists)
+
+        if self.normalize_rows:
+            # Normalized rows for e.g. attention layers.
+            if self.source_signal is None:
+                # Density estimation: the source signal is equal to 1
+                # -> trivial result since the lines of the kernel matrix sum up to 1.
+                self.res = np.ones_like(self.target_points[:, :1])
+            else:
+                # We compute both the product and the normalization in one sweep:
+                # this should optimize memory transfers.
+                signal_1 = np.concatenate(
+                    (self.source_signal, np.ones_like(self.source_signal[..., :1])),
+                    axis=1,
+                )
+                res_sum = K_ij @ signal_1
+                self.res = res_sum[..., :-1] / res_sum[..., -1:]
         else:
-            # shouldn't get past the constructor!
-            assert False, "invalid metric"
+            # Standard kernel matrix product.
+            if self.source_signal is None:
+                # Density estimation: the source signal is equal to 1
+                self.res = np.sum(K_ij, -1, keepdims=True)
+            else:
+                #  General case: we use a matrix product
+                self.res = K_ij @ self.source_signal
 
-    def query(self, v, n):
-        return [index for index, _ in self.query_with_distances(v, n)]
-
-    def query_with_distances(self, v, n):
-        """Find indices of `n` most similar vectors from the index to query
-        vector `v`."""
-
-        if self._metric != "jaccard":
-            # use same precision for query as for index
-            v = numpy.ascontiguousarray(v, dtype=self.index.dtype)
-
-        # HACK we ignore query length as that's a constant
-        # not affecting the final ordering
-        if self._metric == "angular":
-            # argmax_a cossim(a, b) = argmax_a dot(a, b) / |a||b| = argmin_a -dot(a, b)  # noqa
-            dists = -numpy.dot(self.index, v)
-        elif self._metric == "euclidean":
-            # argmin_a (a - b)^2 = argmin_a a^2 - 2ab + b^2 = argmin_a a^2 - 2ab  # noqa
-            dists = self.lengths - 2 * numpy.dot(self.index, v)
-        elif self._metric == "hamming":
-            # Just compute hamming distance using euclidean distance
-            dists = self.lengths - 2 * numpy.dot(self.index, v)
-        elif self._metric == "jaccard":
-            dists = [pd[self._metric]["distance"](v, e) for e in self.index]
-        else:
-            # shouldn't get past the constructor!
-            assert False, "invalid metric"
-        # partition-sort by distance, get `n` closest
-        nearest_indices = numpy.argpartition(dists, n)[:n]
-        indices = [
-            idx
-            for idx in nearest_indices
-            if pd[self._metric]["distance_valid"](dists[idx])
-        ]
-
-        def fix(index):
-            ep = self.index[index]
-            ev = v
-            return (index, pd[self._metric]["distance"](ep, ev))
-
-        return map(fix, indices)

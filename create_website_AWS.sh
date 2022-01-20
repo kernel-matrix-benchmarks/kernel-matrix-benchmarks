@@ -21,12 +21,13 @@ sudo pip3 install -r requirements.txt
 python3 install.py
 
 # Run our benchmarks on all datasets:
-python3 run.py --dataset mnist-784-euclidean
-python3 run.py --dataset fashion-mnist-784-euclidean
-python3 run.py --dataset glove-25-angular
-python3 run.py --dataset glove-50-angular
-python3 run.py --dataset glove-100-angular
-python3 run.py --dataset glove-200-angular
+python3 run.py --dataset uniform-sphere-1k-3-absolute-exponential
+# python3 run.py --dataset mnist-784-euclidean
+# python3 run.py --dataset fashion-mnist-784-euclidean
+# python3 run.py --dataset glove-25-angular
+# python3 run.py --dataset glove-50-angular
+# python3 run.py --dataset glove-100-angular
+# python3 run.py --dataset glove-200-angular
 
 # Create the website and compress it in a zip file:
 sudo python3 create_website.py --outputdir website

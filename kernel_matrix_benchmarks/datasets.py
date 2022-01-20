@@ -157,7 +157,7 @@ def write_output(
             f.attrs["density_estimation"] = False
 
         # Bruteforce computation for the "ground truth" output signal:
-        gt = GroundTruth(kernel, normalize_rows=normalize_rows)
+        gt = GroundTruth(kernel=kernel, normalize_rows=normalize_rows)
         # N.B.: The [:] syntax is there to make sure that we convert
         # the content of the hdf5 file to a NumPy array:
         gt.fit(f["source_points"][:], f["source_signal"][:])
@@ -176,6 +176,7 @@ def uniform_sphere(
     def write_to(filename):
         # Set the seed for reproducible results:
         numpy.random.seed(n_points + dimension)
+
         # Generate the source point cloud as a uniform sample on the sphere
         # (isotropic Gaussian sample followed by a normalization):
         source_points = numpy.random.randn(n_points, dimension)
