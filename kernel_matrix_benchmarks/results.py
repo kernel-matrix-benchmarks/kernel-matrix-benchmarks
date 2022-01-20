@@ -14,7 +14,7 @@ def get_result_filename(
     d = ["results"]
     if dataset:
         d.append(dataset)
-    if count:  # !!! "count" is obsolete, a k-nn only variable !!!
+    if count:  # TODO: "count" is obsolete, a k-nn only variable TODO:
         # We could replace it with "kernel"
         d.append(str(count))
     if definition:
@@ -53,7 +53,7 @@ def store_results(dataset, count, definition, query_arguments, attrs, results, b
         f.attrs[k] = v
 
     # Stores the entries of the result with their computation times:
-    # !!! Currently, this method is ANN-specific
+    # TODO: Currently, this method is ANN-specific
     times = f.create_dataset("times", (len(results),), "f")
     neighbors = f.create_dataset("neighbors", (len(results), count), "i")
     distances = f.create_dataset("distances", (len(results), count), "f")

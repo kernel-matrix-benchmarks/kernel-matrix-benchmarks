@@ -2,17 +2,17 @@ from __future__ import absolute_import
 import numpy as np
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def knn_threshold(data, count, epsilon):
     return data[count - 1] + epsilon
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def epsilon_threshold(data, count, epsilon):
     return data[count - 1] * (1 + epsilon)
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def get_recall_values(dataset_distances, run_distances, count, threshold, epsilon=1e-3):
     recalls = np.zeros(len(run_distances))
     for i in range(len(run_distances)):
@@ -25,7 +25,7 @@ def get_recall_values(dataset_distances, run_distances, count, threshold, epsilo
     return (np.mean(recalls) / float(count), np.std(recalls) / float(count), recalls)
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def knn(dataset_distances, run_distances, count, metrics, epsilon=1e-3):
     if "knn" not in metrics:
         print("Computing knn metrics")
@@ -41,7 +41,7 @@ def knn(dataset_distances, run_distances, count, metrics, epsilon=1e-3):
     return metrics["knn"]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def epsilon(dataset_distances, run_distances, count, metrics, epsilon=0.01):
     s = "eps" + str(epsilon)
     if s not in metrics:
@@ -58,7 +58,7 @@ def epsilon(dataset_distances, run_distances, count, metrics, epsilon=0.01):
     return metrics[s]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def rel(dataset_distances, run_distances, metrics):
     if "rel" not in metrics.attrs:
         print("Computing rel metrics")
@@ -77,12 +77,12 @@ def rel(dataset_distances, run_distances, metrics):
     return metrics.attrs["rel"]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def queries_per_second(queries, attrs):
     return 1.0 / attrs["best_search_time"]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def index_size(queries, attrs):
     # TODO(erikbern): should replace this with peak memory usage or something
     return attrs.get("index_size", 0)
@@ -92,12 +92,12 @@ def build_time(queries, attrs):
     return attrs["build_time"]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def candidates(queries, attrs):
     return attrs["candidates"]
 
 
-# !!! Obsolete
+# TODO: Obsolete
 def dist_computations(queries, attrs):
     return attrs.get("dist_comps", 0) / (attrs["run_count"] * len(queries))
 
@@ -105,7 +105,7 @@ def dist_computations(queries, attrs):
 # All possible choices of performance metrics that can be displayed
 # on the "x" or "y" axes of our plots:
 all_metrics = {
-    # !!! Obsolete
+    # TODO: Obsolete
     "k-nn": {
         "description": "Recall",
         "function": lambda true_distances, run_distances, metrics, run_attrs: knn(
@@ -116,7 +116,7 @@ all_metrics = {
         "worst": float("-inf"),
         "lim": [0.0, 1.03],
     },
-    # !!! Obsolete
+    # TODO: Obsolete
     "epsilon": {
         "description": "Epsilon 0.01 Recall",
         "function": lambda true_distances, run_distances, metrics, run_attrs: epsilon(
@@ -126,7 +126,7 @@ all_metrics = {
         ],  # noqa
         "worst": float("-inf"),
     },
-    # !!! Obsolete
+    # TODO: Obsolete
     "largeepsilon": {
         "description": "Epsilon 0.1 Recall",
         "function": lambda true_distances, run_distances, metrics, run_attrs: epsilon(
@@ -136,7 +136,7 @@ all_metrics = {
         ],  # noqa
         "worst": float("-inf"),
     },
-    # !!! Slightly obsolete
+    # TODO: Slightly obsolete
     "rel": {
         "description": "Relative Error",
         "function": lambda true_distances, run_distances, metrics, run_attrs: rel(
@@ -144,7 +144,7 @@ all_metrics = {
         ),  # noqa
         "worst": float("inf"),
     },
-    # !!! Obsolete
+    # TODO: Obsolete
     "qps": {
         "description": "Queries per second (1/s)",
         "function": lambda true_distances, run_distances, metrics, run_attrs: queries_per_second(
@@ -152,7 +152,7 @@ all_metrics = {
         ),  # noqa
         "worst": float("-inf"),
     },
-    # !!! Slightly obsolete
+    # TODO: Slightly obsolete
     "distcomps": {
         "description": "Distance computations",
         "function": lambda true_distances, run_distances, metrics, run_attrs: dist_computations(
@@ -167,7 +167,7 @@ all_metrics = {
         ),  # noqa
         "worst": float("inf"),
     },
-    # !!! Obsolete
+    # TODO: Obsolete
     "candidates": {
         "description": "Candidates generated",
         "function": lambda true_distances, run_distances, metrics, run_attrs: candidates(
@@ -175,7 +175,7 @@ all_metrics = {
         ),  # noqa
         "worst": float("inf"),
     },
-    # !!! Slightly obsolete
+    # TODO: Slightly obsolete
     "indexsize": {
         "description": "Index size (kB)",
         "function": lambda true_distances, run_distances, metrics, run_attrs: index_size(
@@ -183,7 +183,7 @@ all_metrics = {
         ),  # noqa
         "worst": float("inf"),
     },
-    # !!! Slightly obsolete
+    # TODO: Slightly obsolete
     "queriessize": {
         "description": "Index size (kB)/Queries per second (s)",
         "function": lambda true_distances, run_distances, metrics, run_attrs: index_size(

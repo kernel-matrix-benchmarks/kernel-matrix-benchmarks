@@ -59,7 +59,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
                 total = time.time() - start
 
             # Compute the distance between each query point and each possible output:
-            # !!! This is obsolete for kernel matrix benchmarks.
+            # TODO: This is obsolete for kernel matrix benchmarks.
             candidates = [
                 (
                     int(idx),
@@ -73,7 +73,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
                     "Processed %d/%d queries..." % (n_items_processed[0], len(X_test))
                 )
 
-            # !!! count-related code is obsolete
+            # TODO: count-related code is obsolete
             if len(candidates) > count:
                 print(
                     "warning: algorithm %s returned %d results, but count"
@@ -86,7 +86,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
 
             if prepared_queries:
                 # Load queries on the GPU, etc.
-                # !!! count-related code is obsolete
+                # TODO: count-related code is obsolete
                 algo.prepare_batch_query(X, count)
 
                 # Actual benchmark!
@@ -95,7 +95,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
                 total = time.time() - start
             else:
                 start = time.time()
-                # !!! count-related code is obsolete
+                # TODO: count-related code is obsolete
                 algo.batch_query(X, count)
                 total = time.time() - start
 
@@ -103,7 +103,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
             results = algo.get_batch_results()
 
             # Compute the distance between each query point and each possible output:
-            # !!! This is obsolete for kernel matrix benchmarks.
+            # TODO: This is obsolete for kernel matrix benchmarks.
             candidates = [
                 [
                     (
@@ -128,7 +128,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         search_time = total_time / len(X_test)
         best_search_time = min(best_search_time, search_time)
 
-        # !!! This is probably obsolete:
+        # TODO: This is probably obsolete:
         total_candidates = sum(len(candidates) for _, candidates in results)
         avg_candidates = total_candidates / len(X_test)
 
@@ -143,7 +143,7 @@ def run_individual_query(algo, X_train, X_test, distance, count, run_count, batc
         "name": str(algo),
         "run_count": run_count,
         "distance": distance,
-        "count": int(count),  # !!! obsolete
+        "count": int(count),  # TODO: obsolete
     }
     additional = algo.get_additional()
     for k in additional:
@@ -256,7 +256,7 @@ def run_from_cmdline():
         help='Constructer to load from modulel. E.g. "Annoy"',
         required=True,
     )
-    parser.add_argument(  #  !!! This is obsolete
+    parser.add_argument(  #  TODO: This is obsolete
         "--count",
         help="K: Number of nearest neighbours for the algorithm to return.",
         required=True,
@@ -320,7 +320,7 @@ def run_docker(
         definition.constructor,
         "--runs",
         str(runs),
-        "--count",  #  !!! count is obsolete
+        "--count",  #  TODO: count is obsolete
         str(count),
     ]
 

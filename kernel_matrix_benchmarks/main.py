@@ -92,7 +92,7 @@ def main():
         default="glove-25-angular",
         choices=DATASETS.keys(),
     )
-    parser.add_argument(  # !!! We should remove this argument !!!
+    parser.add_argument(  # TODO: We should remove this argument TODO:
         "-k",
         "--count",
         default=10,
@@ -145,7 +145,7 @@ def main():
         help="If set, then will run everything locally (inside the same "
         "process) rather than using Docker",
     )
-    parser.add_argument(  # !!! We could remove this argument !!!
+    parser.add_argument(  # TODO: We could remove this argument TODO:
         "--batch",
         action="store_true",
         help="If set, algorithms get all queries at once",
@@ -191,7 +191,7 @@ def main():
 
     # Properties of the dataset:
     point_type = dataset.attrs.get("point_type", "float")  # "float", "binary", etc.?
-    distance = dataset.attrs["distance"]  # !!! we will replace this with kernel ???
+    distance = dataset.attrs["distance"]  # TODO: we will replace this with kernel ???
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml

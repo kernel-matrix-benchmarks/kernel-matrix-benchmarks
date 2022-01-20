@@ -70,7 +70,7 @@ def convert_linestyle(ls):
 
 
 def get_run_desc(properties):
-    # !!! Reference to count is obsolete!
+    # TODO: Reference to count is obsolete!
     return "%(dataset)s_%(count)d_%(distance)s" % properties
 
 
@@ -87,7 +87,7 @@ def get_distance_from_desc(desc):
 
 
 def get_dataset_label(desc):
-    # !!! Reference to count is obsolete!
+    # TODO: Reference to count is obsolete!
     return "{} (k = {})".format(get_dataset_from_desc(desc), get_count_from_desc(desc))
 
 
@@ -178,7 +178,7 @@ def create_plot(
     )
 
     #  Mmmm... Do we really need to recompute the Pareto frontier here?
-    # !!! I leave it here just in case.
+    # TODO: I leave it here just in case.
     plot_data = get_lines(all_data, xn, yn, render_all_points)
 
     button_label = hashlib.sha224(
@@ -235,7 +235,7 @@ def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
                 )
 
         # Create a .png plot for the summary page:
-        # !!! Right now, this is an ann-only recall vs time plot.
+        # TODO: Right now, this is an ann-only recall vs time plot.
         data_for_plot = {}
         for k in runs.keys():
             data_for_plot[k] = prepare_data(runs[k], "k-nn", "qps")
@@ -268,7 +268,7 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
     dataset_data = {"batch": [], "non-batch": []}
     for mode in ["batch", "non-batch"]:
         # Arbitrary sorting order: first by "metric" name...
-        # !!! Obsolete choice?
+        # TODO: Obsolete choice?
         distance_measures = sorted(
             set([get_distance_from_desc(e) for e in datasets[mode].keys()])
         )
@@ -288,7 +288,7 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
                     and get_distance_from_desc(e) == dm  # noqa
                 ]
                 # ...and sort them by increasing number of "K"-Nearest Neighbors:
-                # !!! obsolete
+                # TODO: obsolete
                 sorted_matches = sorted(
                     matching_datasets, key=lambda e: int(get_count_from_desc(e))
                 )
@@ -325,7 +325,7 @@ def load_all_results():
             # If this is a new problem, we must recompute some variables:
             if sdn != old_sdn:
                 dataset, _ = get_dataset(properties["dataset"])
-                # !!! "distances" is obsolete, ANN-only
+                # TODO: "distances" is obsolete, ANN-only
                 cached_true_dist = list(dataset["distances"])
                 old_sdn = sdn
 

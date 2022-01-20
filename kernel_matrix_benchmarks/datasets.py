@@ -67,6 +67,9 @@ from urllib.request import urlopen
 from urllib.request import urlretrieve
 
 from kernel_matrix_benchmarks.distance import dataset_transform
+from kernel_matrix_benchmarks.algorithms.bruteforce import (
+    BruteForceProductBLAS as GroundTruth,
+)
 
 
 def download(src, dst):
@@ -111,7 +114,7 @@ def get_dataset(which):
 
 # Everything below this line is related to creating datasets ===================
 # You probably never need to do this at home,
-# just rely on the prepared datasets at http://ann-benchmarks.com
+# just rely on the prepared datasets at http://kernel-matrix-benchmarks.com
 
 
 def write_output(
@@ -123,92 +126,83 @@ def write_output(
     point_type="float",
     normalize_rows=False,
 ):
-    """Write the dataset to a HDF5 file."""
+    """Compute the ground truth output signal and save to a HDF5 file."""
     from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForceProduct
 
-    f = h5py.File(filename, "w")
+    # Handles file opening/closure:
+    with h5py.File(filename, "w") as f:
+        # First attributes: kernel type ("gaussian"...), point_type ("float"),
+        # are we normalizing the rows of the kernel matrix (for attention layers).
+        f.attrs["kernel"] = kernel
+        f.attrs["point_type"] = point_type
+        f.attrs["normalize_rows"] = normalize_rows
 
-    f.attrs["kernel"] = kernel
-    f.attrs["point_type"] = point_type
+        # First data array: source points y_1, ..., y_M:
+        f["source_points"] = source_points
 
-    f["source_points"] = source_points
+        # Second data array: target points x_1, ..., x_N:
+        if target_points is None:  # Special case: x == y
+            f["target_points"] = source_points
+            f.attrs["same_points"] = True
+        else:  # x != y
+            f["target_points"] = target_points
+            f.attrs["same_points"] = False
 
-    if target_points is None:
-        f["target_points"] = source_points
-        f.attrs["same_points"] = True
-    else:
-        f["target_points"] = target_points
-        f.attrs["same_points"] = False
+        # Third data array: source signal b_1, ..., b_M:
+        if source_signal is None:  # Special case: b == 1
+            f["source_signal"] = numpy.ones((len(source_points), 1))
+            f.attrs["density_estimation"] = True
+        else:  # Usual case:
+            f["source_signal"] = source_signal
+            f.attrs["density_estimation"] = False
 
-    if source_signal is None:
-        f["source_signal"] = numpy.ones((len(source_points), 1))
-        f.attrs["density_estimation"] = True
-    else:
-        f["source_signal"] = source_signal
-        f.attrs["density_estimation"] = False
+        # Bruteforce computation for the "ground truth" output signal:
+        gt = GroundTruth(kernel, normalize_rows=normalize_rows)
+        # N.B.: The [:] syntax is there to make sure that we convert
+        # the content of the hdf5 file to a NumPy array:
+        gt.fit(f["source_points"][:], f["source_signal"][:])
+        gt.batch_query(f["target_points"][:])
 
-    f.create_dataset("test", (len(test), len(test[0])), dtype=test.dtype)[:] = test
-    neighbors = f.create_dataset("neighbors", (len(test), count), dtype="i")
-    distances = f.create_dataset("distances", (len(test), count), dtype="f")
-    bf = BruteForceBLAS(distance, precision=train.dtype)
-
-    bf.fit(train)
-    for i, x in enumerate(test):
-        if i % 1000 == 0:
-            print("%d/%d..." % (i, len(test)))
-        res = list(bf.query_with_distances(x, count))
-        res.sort(key=lambda t: t[-1])
-        neighbors[i] = [j for j, _ in res]
-        distances[i] = [d for _, d in res]
-    f.close()
-
-
-"""
-param: train and test are arrays of arrays of indices.
-"""
+        # Fourth data array: target signal a_1, ..., a_N:
+        f["target_signal"] = gt.get_batch_results()
 
 
-# !!! Obsolete
-def write_sparse_output(train, test, fn, distance, dimension, count=100):
-    from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForceBLAS
-
-    f = h5py.File(fn, "w")
-    f.attrs["type"] = "sparse"
-    f.attrs["distance"] = distance
-    f.attrs["dimension"] = dimension
-    f.attrs["point_type"] = "bit"
-    print("train size: %9d * %4d" % (train.shape[0], dimension))
-    print("test size:  %9d * %4d" % (test.shape[0], dimension))
-
-    # We ensure the sets are sorted
-    train = numpy.array(list(map(sorted, train)))
-    test = numpy.array(list(map(sorted, test)))
-
-    flat_train = numpy.hstack(train.flatten())
-    flat_test = numpy.hstack(test.flatten())
-
-    f.create_dataset("train", (len(flat_train),), dtype=flat_train.dtype)[
-        :
-    ] = flat_train
-    f.create_dataset("test", (len(flat_test),), dtype=flat_test.dtype)[:] = flat_test
-    neighbors = f.create_dataset("neighbors", (len(test), count), dtype="i")
-    distances = f.create_dataset("distances", (len(test), count), dtype="f")
-
-    f.create_dataset("size_test", (len(test),), dtype="i")[:] = list(map(len, test))
-    f.create_dataset("size_train", (len(train),), dtype="i")[:] = list(map(len, train))
-
-    bf = BruteForceBLAS(distance, precision=train.dtype)
-    bf.fit(train)
-    for i, x in enumerate(test):
-        if i % 1000 == 0:
-            print("%d/%d..." % (i, len(test)))
-        res = list(bf.query_with_distances(x, count))
-        res.sort(key=lambda t: t[-1])
-        neighbors[i] = [j for j, _ in res]
-        distances[i] = [d for _, d in res]
-    f.close()
+# Synthetic test case: uniform sample on a sphere ------------------------------
 
 
+def uniform_sphere(
+    n_points=1000, dimension=3, radius=1, kernel="gaussian", normalize_rows=False
+):
+    def write_to(filename):
+        # Set the seed for reproducible results:
+        numpy.random.seed(n_points + dimension)
+        # Generate the source point cloud as a uniform sample on the sphere
+        # (isotropic Gaussian sample followed by a normalization):
+        source_points = numpy.random.randn(n_points, dimension)
+        norms = numpy.linalg.norm(source_points, 2, -1)
+        norms[norms == 0] = 1
+        source_points = source_points / norms.reshape(n_points, 1)
+        # Rescale the point cloud by the desired radius:
+        source_points = radius * source_points
+
+        # Generate source signal:
+        source_signal = numpy.random.randn(n_points, 1)
+
+        # Compute the ground truth output signal and save to file:
+        write_output(
+            filename,
+            kernel,
+            source_points,
+            target_points=None,  # == source_points
+            source_signal=source_signal,
+            point_type="float",
+            normalize_rows=normalize_rows,
+        )
+
+    return write_to
+
+
+# TODO: GloVE and MNIST should be updated
 # GloVE 25, 50, 100 and 200 ----------------------------------------------------
 
 
@@ -305,7 +299,7 @@ def fashion_mnist(out_fn):
 
 DATASETS = {
     "uniform-sphere-1k-3-absolute-exponential": uniform_sphere(
-        1000, 3, "absolute-exponential"
+        n_points=1000, dimension=3, radius=1, kernel="absolute-exponential"
     ),
     # "mnist-784-euclidean": mnist,
     # "fashion-mnist-784-euclidean": fashion_mnist,
