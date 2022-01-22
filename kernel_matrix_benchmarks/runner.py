@@ -320,8 +320,6 @@ def run_docker(
         definition.constructor,
         "--runs",
         str(runs),
-        "--count",  #  TODO: count is obsolete
-        str(count),
     ]
 
     # "batch mode" will be set to true most of the time:
@@ -372,7 +370,7 @@ def run_docker(
     t = threading.Thread(target=stream_logs, daemon=True)
     t.start()
 
-    # Launch the container, wait at most timeout seconds (2 hours by default):
+    # Launch the container, wait at most timeout seconds (2 * 10mn by default):
     try:
         return_value = container.wait(timeout=timeout)
         _handle_container_return_value(return_value, container, logger)

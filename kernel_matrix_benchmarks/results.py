@@ -8,15 +8,12 @@ import traceback
 
 
 def get_result_filename(
-    dataset=None, count=None, definition=None, query_arguments=None, batch_mode=False
+    dataset=None, definition=None, query_arguments=None, batch_mode=False
 ):
     """Creates a filename thatlookss like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
     d = ["results"]
     if dataset:
         d.append(dataset)
-    if count:  # TODO: "count" is obsolete, a k-nn only variable TODO:
-        # We could replace it with "kernel"
-        d.append(str(count))
     if definition:
         d.append(definition.algorithm + ("-batch" if batch_mode else ""))
         data = definition.arguments + query_arguments
@@ -28,12 +25,12 @@ def get_result_filename(
     return os.path.join(*d)
 
 
-def store_results(dataset, count, definition, query_arguments, attrs, results, batch):
+def store_results(dataset, definition, query_arguments, attrs, results, batch):
     """Stores the raw output of a computation."""
 
     # The result filename looks like
     # "results/dataset/algorithm/M_4_L_0_5.hdf5"
-    fn = get_result_filename(dataset, count, definition, query_arguments, batch)
+    fn = get_result_filename(dataset, definition, query_arguments, batch)
 
     # Creates the folder "results/dataset/algorithm/":
     head, tail = os.path.split(fn)
@@ -46,7 +43,7 @@ def store_results(dataset, count, definition, query_arguments, attrs, results, b
     # attrs is a dictionary with keys:
     # "build_time", "index_size", "algo", "dataset",
     # "batch_mode", "best_search_time", "candidates",
-    # "expect_extra", "name", "run_count", "count" (obsolete)
+    # "expect_extra", "name", "run_count",
     # and algorithm-specific "extras".
     # All of this is saved in the hdf5 file.
     for k, v in attrs.items():
@@ -64,9 +61,9 @@ def store_results(dataset, count, definition, query_arguments, attrs, results, b
     f.close()
 
 
-def load_all_results(dataset=None, count=None, batch_mode=False):
+def load_all_results(dataset=None, batch_mode=False):
     """Python iterator that returns all the "results" hdf5 files with the correct attributes."""
-    for root, _, files in os.walk(get_result_filename(dataset, count)):
+    for root, _, files in os.walk(get_result_filename(dataset)):
         for fn in files:
             if os.path.splitext(fn)[-1] != ".hdf5":
                 continue

@@ -13,7 +13,6 @@ import sys
 import traceback
 
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
-from kernel_matrix_benchmarks.constants import INDEX_DIR
 from kernel_matrix_benchmarks.algorithms.definitions import (
     get_definitions,
     list_algorithms,
@@ -54,7 +53,7 @@ def run_worker(cpu, args, queue):
         if args.local:
             # Case 1: the user does not want to bother with Docker,
             #    e.g. when writing and testing a pull request on a local machine.
-            run(definition, args.dataset, args.count, args.runs, args.batch)
+            run(definition, args.dataset, args.runs, args.batch)
 
         else:
             # Case 2: the user is using Docker, e.g. when rendering the website.
@@ -69,7 +68,6 @@ def run_worker(cpu, args, queue):
             run_docker(
                 definition,
                 args.dataset,
-                args.count,
                 args.runs,
                 args.timeout,
                 args.batch,
@@ -89,15 +87,8 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="glove-25-angular",
+        default="uniform-sphere-1k-3-inverse-distance",
         choices=DATASETS.keys(),
-    )
-    parser.add_argument(  # TODO: We should remove this argument TODO:
-        "-k",
-        "--count",
-        default=10,
-        type=positive_int,
-        help="the number of near neighbours to search for",
     )
     parser.add_argument(
         "--definitions",
@@ -129,15 +120,17 @@ def main():
         metavar="COUNT",
         type=positive_int,
         help="run each algorithm instance %(metavar)s times and use only"
-        " the best result",
-        default=1,
+        " the best result. This is especially useful for methods that rely on"
+        " just-in-time compiling: the first run includes compiling times"
+        " whereas the second doesn't.",
+        default=2,
     )
     parser.add_argument(
         "--timeout",
         type=int,
         help="Timeout (in seconds) for each individual algorithm run, or -1"
         "if no timeout should be set",
-        default=2 * 3600,
+        default=2 * 600,  # Max 10mn per run to keep costs manageable.
     )
     parser.add_argument(
         "--local",
@@ -181,23 +174,16 @@ def main():
     logging.config.fileConfig("logging.conf")
     logger = logging.getLogger("kmb")
 
-    # Nmslib specific code
-    # Remove old indices stored on disk
-    if os.path.exists(INDEX_DIR):
-        shutil.rmtree(INDEX_DIR)
-
     # Load the dataset:
     dataset, dimension = get_dataset(args.dataset)
 
     # Properties of the dataset:
     point_type = dataset.attrs.get("point_type", "float")  # "float", "binary", etc.?
-    distance = dataset.attrs["distance"]  # TODO: we will replace this with kernel ???
+    kernel = dataset.attrs["kernel"]
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml
-    definitions = get_definitions(
-        args.definitions, dimension, point_type, distance, args.count
-    )
+    definitions = get_definitions(args.definitions, dimension, point_type, kernel)
 
     # Filter out, from the loaded definitions, all those query argument groups
     # that correspond to experiments that have already been run. (This might
@@ -218,7 +204,7 @@ def main():
             # The result filename looks like
             # "results/dataset/algorithm/M_4_L_0_5.hdf5"
             fn = get_result_filename(
-                args.dataset, args.count, definition, query_arguments, args.batch
+                args.dataset, definition, query_arguments, args.batch
             )
             if args.force or not os.path.exists(fn):
                 not_yet_run.append(query_arguments)

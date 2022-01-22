@@ -13,9 +13,9 @@ def inverse_square_root(sqdists):
 
 
 kernel_functions = {
-    "inverse distance": inverse_square_root,
+    "inverse-distance": inverse_square_root,
     "gaussian": lambda sqdists: np.exp(-sqdists),
-    "absolute exponential": lambda sqdists: np.exp(-np.sqrt(np.maximum(sqdists, 0))),
+    "absolute-exponential": lambda sqdists: np.exp(-np.sqrt(np.maximum(sqdists, 0))),
 }
 
 

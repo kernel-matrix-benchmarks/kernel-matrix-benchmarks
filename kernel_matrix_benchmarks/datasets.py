@@ -299,8 +299,8 @@ def fashion_mnist(out_fn):
 # Full list of supported datasets ----------------------------------------------
 
 DATASETS = {
-    "uniform-sphere-1k-3-absolute-exponential": uniform_sphere(
-        n_points=1000, dimension=3, radius=1, kernel="absolute-exponential"
+    "uniform-sphere-1k-3-inverse-distance": uniform_sphere(
+        n_points=1000, dimension=3, radius=1, kernel="inverse-distance"
     ),
     # "mnist-784-euclidean": mnist,
     # "fashion-mnist-784-euclidean": fashion_mnist,
