@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import numpy as np
 import scipy
-from kernel_matrix_benchmarks.distance import metrics as pd
 from kernel_matrix_benchmarks.algorithms.base import BaseProduct, BaseSolver
 
 

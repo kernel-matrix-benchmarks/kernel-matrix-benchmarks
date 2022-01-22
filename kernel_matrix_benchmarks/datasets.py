@@ -66,7 +66,6 @@ import random
 from urllib.request import urlopen
 from urllib.request import urlretrieve
 
-from kernel_matrix_benchmarks.distance import dataset_transform
 from kernel_matrix_benchmarks.algorithms.bruteforce import (
     BruteForceProductBLAS as GroundTruth,
 )
