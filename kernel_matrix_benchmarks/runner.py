@@ -16,15 +16,15 @@ from kernel_matrix_benchmarks.algorithms.definitions import (
     instantiate_algorithm,
 )
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
-from kernel_matrix_benchmarks.results import store_results
+from kernel_matrix_benchmarks.results import store_result
 
 
-def run_individual_query(algo, query_data, kernel, run_count):
+def run_individual_query(algo, true_answer, query_data, kernel, run_count):
     """Performs an actual computation to benchmark!"""
 
     # We try an experiment "run_count" times and keep the best run time:
     best_query_time = float("inf")
-    best_results = None
+    best_result = None
 
     for i in range(run_count):
         print("Run %d/%d..." % (i + 1, run_count))
@@ -39,18 +39,16 @@ def run_individual_query(algo, query_data, kernel, run_count):
         query_time = time.time() - start
 
         # Unload the output from the GPU, etc.
-        results = algo.get_result()
+        result = algo.get_result()
 
         # We are interested in the "minimum query time" among all runs:
         if query_time <= best_query_time:
             best_query_time = query_time
-            best_results = results
+            best_result = result
 
     # Return all types of metadata (attrs) and the results array:
-    verbose = hasattr(algo, "query_verbose")
     attrs = {
-        "best_query_time": best_query_time,
-        "expect_extra": verbose,
+        "query_time": best_query_time,
         "name": str(algo),
         "run_count": run_count,
         "kernel": kernel,
@@ -58,7 +56,7 @@ def run_individual_query(algo, query_data, kernel, run_count):
     additional = algo.get_additional()
     for k in additional:
         attrs[k] = additional[k]
-    return (attrs, best_results)
+    return (attrs, best_result, best_result - true_answer)
 
 
 def run(definition, dataset, run_count):
@@ -113,10 +111,12 @@ def run(definition, dataset, run_count):
                     normalize_rows=normalize_rows,
                 )
                 query_data = target_points
+                true_answer = target_signal
 
             elif _algo.task == "solver":
                 _algo.prepare_data(source_points)
                 query_data = target_signal
+                true_answer = source_signal
 
             else:
                 raise NotImplementedError()
@@ -152,8 +152,8 @@ def run(definition, dataset, run_count):
                 algo.set_query_arguments(*query_arguments)
 
             # Benchmark the query:
-            descriptor, results = run_individual_query(
-                algo, query_data, kernel, run_count
+            descriptor, results, error = run_individual_query(
+                algo, true_answer, query_data, kernel, run_count
             )
             descriptor["build_time"] = build_time
             descriptor["memory_footprint"] = mem_footprint
@@ -161,7 +161,9 @@ def run(definition, dataset, run_count):
             descriptor["dataset"] = dataset
 
             # Store the raw output of the algorithm.
-            store_results(dataset, definition, query_arguments, descriptor, results)
+            store_result(
+                dataset, definition, query_arguments, descriptor, results, error
+            )
     finally:
         algo.done()
 
