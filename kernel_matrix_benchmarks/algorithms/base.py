@@ -1,9 +1,16 @@
 from __future__ import absolute_import
 from multiprocessing.pool import ThreadPool
 import psutil
+import numpy as np
 
 
 class BaseAlgorithm(object):
+    def __init__(self, kernel="gaussian", normalize_rows=False, precision=np.float64):
+        self.kernel = kernel
+        self.precision = precision
+        self.normalize_rows = normalize_rows
+        self.name = "BaseAlgorithm()"
+
     def done(self):
         pass
 
