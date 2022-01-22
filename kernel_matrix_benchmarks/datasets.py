@@ -21,12 +21,12 @@ A dataset file "f" contains the following attributes and tables:
     For now, we only support real-valued vectors - but permutations and other
     discrete objects may be supported in the future.
 
-- f.attrs["kernel"] = "absolute exponential" | "gaussian" | ...
+- f.attrs["kernel"] = "absolute-exponential" | "gaussian" | ...
     A string identifier for the kernel function.
     We assume that the data points are scaled so that we can use
     the most simple formula for the kernel k(x, y), without any scaling constant.
 
-    For instance, "absolute exponential" refers to the kernel formula:
+    For instance, "absolute-exponential" refers to the kernel formula:
         k(x, y) = exp(-|x - y|_2)
     whereas "gaussian" refers to:
         k(x, y) = exp(-|x - y|^2_2).

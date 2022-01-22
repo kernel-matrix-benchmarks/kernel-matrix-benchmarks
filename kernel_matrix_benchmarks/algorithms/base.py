@@ -20,6 +20,10 @@ class BaseAlgorithm(object):
         # return in kB for backwards compatibility
         return psutil.Process().memory_info().rss / 1024
 
+    def set_query_arguments(self, *args):
+        """Sets additional arguments, after the pre-computation step but before the query."""
+        pass
+
     def get_additional(self):
         return {}
 
@@ -30,47 +34,60 @@ class BaseAlgorithm(object):
 class BaseProduct(BaseAlgorithm):
     """Base class for kernel matrix products and attention layers."""
 
-    def fit(self, source_points, source_signal=None):
-        """Fits the algorithm to a source distribution.
+    task = "product"
+
+    def prepare_data(
+        self,
+        source_points,
+        source_signal=None,
+        same_points=False,
+        density_estimation=False,
+        normalize_rows=False,
+    ):
+        """Load data for the pre-processing step, outside of the timer.
+
+        This routine is not included in the timer and may be used
+        to e.g. load the result from the RAM to a GPU device.
 
         Args:
             source_points ((M,D) array): the reference point cloud.
             source_signal ((M,E) array or None): the reference signal.
                 If None, we assume that E=1 and that the source signal 
                 is uniformly equal to 1, i.e. we perform kernel density estimation.
+            same_points (bool): should we assume that the target point cloud 
+                is equal to the source?
+            density_estimation (bool): should we assume that the source signal 
+                is equal to 1?
+            normalize_rows (bool): should we normalize the rows of the kernel matrix
+                so that they sum up to 1?
         """
-
-        # By default, we do nothing:
         pass
 
-    def query(self, target_point):
-        """Performs the computation of interest for a single target point.
+    def fit(self):
+        """Fits the algorithm to a source distribution - this operation is timed."""
+        pass
 
-        Args:
-            target_point ((D,) vector): query point x_i.
-
-        Returns:
-            (E,) vector: output of the computation at point x_i.
+    def prepare_query(self, target_points):
+        """Reformat or recasts the input target points, outside of the timer.
+        
+        To ensure a fair benchmark, we may need to 
+        e.g. load queries on the GPU or change the numerical precision.
         """
-        self.batch_query(target_point.reshape(1, -1))  # (D,) -> (1,D) query
-        return self.get_batch_results.reshape(-1)  # (1,D) -> (D,) output
+        pass
 
-    def batch_query(self, target_points):
-        """Provide all queries at once and let the algorithm figure out how to handle it.
-
-        Default implementation uses a ThreadPool to parallelize query processing.
+    def query(self):
+        """Performs the computation of interest for all target points - this operation is timed.
 
         Args:
             target_points ((N,D) array): query points.
 
         Returns:
-            None: see the get_batch_results() method below.
+            None: see the get_result() method below.
         """
-        pool = ThreadPool()
-        self.res = pool.map(lambda q: self.query(q), target_points)
+        self.res = None
 
-    def get_batch_results(self):
-        """Returns the result of batch_query() as a NumPy array.
+    def get_result(self):
+        """Returns the result of query() as a float64 NumPy array, outside of the timer.
 
         This routine is not included in the timer and may be used
         to e.g. unload the result from a GPU device and cast it as a NumPy array.
@@ -78,35 +95,50 @@ class BaseProduct(BaseAlgorithm):
         Returns:
             (N,E) array: output of the computation at the N points x_i.
         """
-        return self.res
+        return np.ascontiguousarray(self.res, dtype=np.float64)
 
 
 class BaseSolver(BaseAlgorithm):
     """Base class for kernel matrix solvers."""
 
-    def fit(self, source_points):
-        """Fits the algorithm to a source distribution.
+    task = "solver"
+
+    def prepare_data(self, source_points):
+        """Load data for the pre-processing step, outside of the timer.
+
+        This routine is not included in the timer and may be used
+        to e.g. load the result from the RAM to a GPU device.
 
         Args:
             source_points ((M,D) array): the reference point cloud.
         """
-
-        # By default, we do nothing:
         pass
 
-    def batch_query(self, target_signal):
-        """Computes the solution of a kernel linear system and store it in self.res
+    def fit(self):
+        """Fits the algorithm to a source distribution - this operation is timed."""
+        pass
+
+    def prepare_query(self, target_signal):
+        """Reformat or recasts the input target signal, outside of the timer.
+        
+        To ensure a fair benchmark, we may need to 
+        e.g. load the signal on the GPU or change the numerical precision.
+        """
+        pass
+
+    def query(self, target_signal):
+        """Computes the solution of a kernel linear system and store it in self.res - this operation is timed.
 
         Args:
             target_signal ((N,E) array): output of the kernel matrix product.
 
         Returns:
-            None: see the get_batch_results() method below.
+            None: see the get_result() method below.
         """
         raise NotImplementedError()
 
-    def get_batch_results(self):
-        """Returns the result of batch_query() as a NumPy array.
+    def get_result(self):
+        """Returns the result of query() as a float64 NumPy array, outside of the timer.
 
         This routine is not included in the timer and may be used
         to e.g. unload the result from a GPU device and cast it as a NumPy array.
@@ -114,5 +146,5 @@ class BaseSolver(BaseAlgorithm):
         Returns:
             (M,E) array: output of the computation at the M points y_j.
         """
-        return self.res
+        return np.ascontiguousarray(self.res, dtype=np.float64)
 

@@ -51,20 +51,22 @@ class BruteForceProductBLAS(BaseProduct):
         # Pre-compute the squared Euclidean norm of each point:
         self.source_sqnorms = (self.source_points ** 2).sum(-1)  # (M,)
 
-    def batch_query(self, target_points):
-        M, D = self.source_points.shape
-        N, _ = target_points.shape
-
+    def prepare_batch_query(self, target_points):
         # Cast to the required precision and as contiguous array for top performance:
         # TODO: Check if target_points being contiguous vs its transpose
         #       being contiguous is faster.
-        target_points = np.ascontiguousarray(target_points, dtype=self.precision)
-        target_sqnorms = (target_points ** 2).sum(-1)
+        self.target_points = np.ascontiguousarray(target_points, dtype=self.precision)
+
+    def batch_query(self):
+        M, D = self.source_points.shape
+        N, _ = self.target_points.shape
+
+        target_sqnorms = (self.target_points ** 2).sum(-1)
 
         sqdists = (
             self.source_sqnorms.reshape(1, M)  # (1,M)
             + target_sqnorms.reshape(N, 1)  # (N,1)
-            - 2 * target_points @ self.source_points.T  # (N,D) @ (D,M) = (N,M)
+            - 2 * self.target_points @ self.source_points.T  # (N,D) @ (D,M) = (N,M)
         )
         K_ij = kernel_functions[self.kernel](sqdists)  # (N,M)
 
@@ -127,9 +129,9 @@ class BruteForceSolverLAPACK(BaseSolver):
 
         self.K_ij = kernel_functions[self.kernel](sqdists)
 
-    def batch_query(self, target_signal):
-
+    def prepare_batch_query(self, target_signal):
         # Cast to the required precision and as contiguous array for top performance:
-        target_signal = np.ascontiguousarray(target_signal, dtype=self.precision)
+        self.target_signal = np.ascontiguousarray(target_signal, dtype=self.precision)
 
-        self.res = scipy.linalg.solve(self.K_ij, target_signal, assume_a="pos")
+    def batch_query(self):
+        self.res = scipy.linalg.solve(self.K_ij, self.target_signal, assume_a="pos")

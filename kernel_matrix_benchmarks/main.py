@@ -53,26 +53,17 @@ def run_worker(cpu, args, queue):
         if args.local:
             # Case 1: the user does not want to bother with Docker,
             #    e.g. when writing and testing a pull request on a local machine.
-            run(definition, args.dataset, args.runs, args.batch)
+            run(definition, args.dataset, args.runs)
 
         else:
             # Case 2: the user is using Docker, e.g. when rendering the website.
             memory_margin = 500e6  # reserve some extra memory (~500 Mb) for misc stuff
-            mem_limit = int(
-                (psutil.virtual_memory().available - memory_margin) / args.parallelism
-            )
-            cpu_limit = str(cpu)
-            if args.batch:
-                cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
+            mem_limit = int((psutil.virtual_memory().available - memory_margin))
+            #  Use all available CPUs:
+            cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
 
             run_docker(
-                definition,
-                args.dataset,
-                args.runs,
-                args.timeout,
-                args.batch,
-                cpu_limit,
-                mem_limit,
+                definition, args.dataset, args.runs, args.timeout, cpu_limit, mem_limit,
             )
 
 
@@ -138,11 +129,6 @@ def main():
         help="If set, then will run everything locally (inside the same "
         "process) rather than using Docker",
     )
-    parser.add_argument(  # TODO: We could remove this argument TODO:
-        "--batch",
-        action="store_true",
-        help="If set, algorithms get all queries at once",
-    )
     parser.add_argument(
         "--max-n-algorithms",
         type=int,
@@ -153,12 +139,6 @@ def main():
         "--run-disabled",
         help="run algorithms that are disabled in algos.yml",
         action="store_true",
-    )
-    parser.add_argument(
-        "--parallelism",
-        type=positive_int,
-        help="Number of Docker containers in parallel",
-        default=1,
     )
 
     args = parser.parse_args()
@@ -203,9 +183,7 @@ def main():
         for query_arguments in query_argument_groups:
             # The result filename looks like
             # "results/dataset/algorithm/M_4_L_0_5.hdf5"
-            fn = get_result_filename(
-                args.dataset, definition, query_arguments, args.batch
-            )
+            fn = get_result_filename(args.dataset, definition, query_arguments)
             if args.force or not os.path.exists(fn):
                 not_yet_run.append(query_arguments)
 
@@ -305,28 +283,14 @@ def main():
     else:
         logger.info(f"Order: {definitions}")
 
-    # args.parallelism specifies the number of tests that we may run in parallel,
-    # in single-thread mode.
-    # In practice, I don't think that this will be used by default.
-    if args.parallelism > multiprocessing.cpu_count() - 1:
-        raise Exception(
-            "Parallelism larger than %d! (CPU count minus one)"
-            % (multiprocessing.cpu_count() - 1)
-        )
-
     # Multiprocessing magic to farm this out to all CPUs
     queue = multiprocessing.Queue()
     for definition in definitions:
         queue.put(definition)
 
-    # Note that args.batch will be true most of the time:
-    if args.batch and args.parallelism > 1:
-        raise Exception(
-            f"Batch mode uses all available CPU resources, --parallelism should be set to 1. (Was: {args.parallelism})"
-        )
     workers = [
         multiprocessing.Process(target=run_worker, args=(i + 1, args, queue))
-        for i in range(args.parallelism)
+        for i in range(1)
     ]
     [worker.start() for worker in workers]
     [worker.join() for worker in workers]

@@ -8,14 +8,14 @@ import traceback
 
 
 def get_result_filename(
-    dataset=None, definition=None, query_arguments=None, batch_mode=False
+    dataset=None, definition=None, query_arguments=None,
 ):
     """Creates a filename thatlookss like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
     d = ["results"]
     if dataset:
         d.append(dataset)
     if definition:
-        d.append(definition.algorithm + ("-batch" if batch_mode else ""))
+        d.append(definition.algorithm)
         data = definition.arguments + query_arguments
         # The filename is a "flat" expansion of the dict of parameters,
         # with all "non alphanumerical symbols" replaced by "_".
@@ -25,12 +25,12 @@ def get_result_filename(
     return os.path.join(*d)
 
 
-def store_results(dataset, definition, query_arguments, attrs, results, batch):
+def store_results(dataset, definition, query_arguments, attrs, results):
     """Stores the raw output of a computation."""
 
     # The result filename looks like
     # "results/dataset/algorithm/M_4_L_0_5.hdf5"
-    fn = get_result_filename(dataset, definition, query_arguments, batch)
+    fn = get_result_filename(dataset, definition, query_arguments)
 
     # Creates the folder "results/dataset/algorithm/":
     head, tail = os.path.split(fn)
@@ -42,7 +42,7 @@ def store_results(dataset, definition, query_arguments, attrs, results, batch):
 
     # attrs is a dictionary with keys:
     # "build_time", "index_size", "algo", "dataset",
-    # "batch_mode", "best_search_time", "candidates",
+    # "best_search_time", "candidates",
     # "expect_extra", "name", "run_count",
     # and algorithm-specific "extras".
     # All of this is saved in the hdf5 file.
@@ -61,7 +61,7 @@ def store_results(dataset, definition, query_arguments, attrs, results, batch):
     f.close()
 
 
-def load_all_results(dataset=None, batch_mode=False):
+def load_all_results(dataset=None):
     """Python iterator that returns all the "results" hdf5 files with the correct attributes."""
     for root, _, files in os.walk(get_result_filename(dataset)):
         for fn in files:
@@ -70,10 +70,6 @@ def load_all_results(dataset=None, batch_mode=False):
             try:
                 f = h5py.File(os.path.join(root, fn), "r+")
                 properties = dict(f.attrs)
-                if batch_mode != properties["batch_mode"]:
-                    # "continue" -> skip to the next file
-                    continue
-
                 # "yield" = "return", but for iterators
                 yield properties, f
                 f.close()
@@ -84,7 +80,6 @@ def load_all_results(dataset=None, batch_mode=False):
 
 def get_unique_algorithms():
     algorithms = set()
-    for batch_mode in [False, True]:
-        for properties, _ in load_all_results(batch_mode=batch_mode):
-            algorithms.add(properties["algo"])
+    for properties, _ in load_all_results():
+        algorithms.add(properties["algo"])
     return algorithms
