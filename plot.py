@@ -7,7 +7,7 @@ import numpy as np
 import argparse
 
 from kernel_matrix_benchmarks.datasets import get_dataset
-from kernel_matrix_benchmarks.algorithms.definitions import get_definitions
+from kernel_matrix_benchmarks.definitions import get_definitions
 from kernel_matrix_benchmarks.plotting.metrics import all_metrics as metrics
 from kernel_matrix_benchmarks.plotting.utils import (
     get_plot_label,

@@ -13,7 +13,7 @@ import sys
 import traceback
 
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
-from kernel_matrix_benchmarks.algorithms.definitions import (
+from kernel_matrix_benchmarks.definitions import (
     get_definitions,
     list_algorithms,
     algorithm_status,

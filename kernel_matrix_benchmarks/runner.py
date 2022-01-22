@@ -11,7 +11,7 @@ import docker
 import numpy
 import psutil
 
-from kernel_matrix_benchmarks.algorithms.definitions import (
+from kernel_matrix_benchmarks.definitions import (
     Definition,
     instantiate_algorithm,
 )
