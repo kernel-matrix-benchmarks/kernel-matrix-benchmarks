@@ -6,6 +6,7 @@ from kernel_matrix_benchmarks.plotting.metrics import all_metrics as metrics
 
 
 def get_or_create_metrics(run):
+    """Returns the "subfolder" of the HDF5 file "run/metric" where metrics may be stored."""
     if "metrics" not in run:
         run.create_group("metrics")
     return run["metrics"]
@@ -63,11 +64,14 @@ def create_pointset(data, xn, yn):
     return xs, ys, ls, axs, ays, als
 
 
-def compute_metrics(true_nn_distances, res, metric_1, metric_2, recompute=False):
+def compute_metrics(dataset, res, metric_1, metric_2, recompute=False):
     """Computes a list of (x,y) values to fill our plots.
 
     Args:
-        true_nn_distances (array): ground truth values.
+        dataset (HDF5 file): original file, that contains ground truth values.
+            This may be useful if e.g. we need to compute the residual error
+            associated to a solver by making a bruteforce kernel computation
+            on a set of target points.
         res (list of (dict, hdf5 file)): list of results per run.
         metric_1 (string): name of the property to put on the x axis.
         metric_2 (string): name of the property to put on the y axis.
@@ -82,23 +86,38 @@ def compute_metrics(true_nn_distances, res, metric_1, metric_2, recompute=False)
     all_results = {}
     for i, (properties, run) in enumerate(res):
         # Properties is a dict, run is an hdf5 file:
-        algo = properties["algo"]
-        algo_name = properties["name"]
-        # Cache distances to avoid access to the hdf5 file:
-        run_distances = numpy.array(run["distances"])
+        algo = properties["algo"]  # str, as in algos.yaml
+        algo_name = properties["name"]  # str, attribute "algo.name" defined in Python
+        # Cache in RAM the results and errors (= result - true_answer)
+        # using the "file["key"][:]" syntax to avoid access to
+        # the hdf5 file on the hard drive:
+        result = run["result"][:]
+        error = run["error"][:]
+
+        # The HDF5 file may contain information about the metrics.
+        #  If required, we delete it:
         if recompute and "metrics" in run:
             del run["metrics"]
+        #  And eventually, load it again:
         metrics_cache = get_or_create_metrics(run)
 
-        # Compute the metrics by comparing the ground truth results
-        # with the experiment results ("run_distances")
-        # and miscellaneous performance metrics ("metrics_cache")
-        # such as query time, etc.
+        # Compute the metrics using the original dataset (if needed),
+        # the output of the algorithm, the difference with the ground truth value,
+        # the metadata of the experiment and, possibly, a cache of pre-computed
+        # metrics:
         metric_1_value = metrics[metric_1]["function"](
-            true_nn_distances, run_distances, metrics_cache, properties
+            dataset=dataset,
+            result=result,
+            error=error,
+            properties=properties,
+            metrics_cache=metrics_cache,
         )
         metric_2_value = metrics[metric_2]["function"](
-            true_nn_distances, run_distances, metrics_cache, properties
+            dataset=dataset,
+            result=result,
+            error=error,
+            properties=properties,
+            metrics_cache=metrics_cache,
         )
 
         print(
@@ -113,38 +132,59 @@ def compute_metrics(true_nn_distances, res, metric_1, metric_2, recompute=False)
     return all_results
 
 
-def compute_all_metrics(true_nn_distances, run, properties, recompute=False):
+def compute_all_metrics(dataset, run, properties, recompute=False):
     """Evaluates all metrics for a given experiment.
 
     Args:
-        true_nn_distances (array): ground truth values.
+        dataset (HDF5 file): original file, that contains ground truth values.
+            This may be useful if e.g. we need to compute the residual error
+            associated to a solver by making a bruteforce kernel computation
+            on a set of target points.
         run (hdf5 file): hdf5 file that stores the output of an experiment.
         properties (dict): properties of the experiment with keys "algo" and "name".
+            In practice, properties = dict(run.attrs).
         recompute (bool, optional): shall we recompute metrics if they
-            are already in the attributes of res? Defaults to False.
+            are already in the attributes of run? Defaults to False.
 
     Returns:
         (str, str, dict) 3-uple: algo, algo_name and a {metric: value} dict.
     """
-    algo = properties["algo"]
-    algo_name = properties["name"]
+
+    algo = properties["algo"]  # str, as in algos.yaml
+    algo_name = properties["name"]  # str, attribute "algo.name" defined in Python
     print("--")
     print(algo_name)
     results = {}
-    # Cache distances to avoid access to the hdf5 file:
-    run_distances = numpy.array(run["distances"])
+
+    # Cache in RAM the results and errors (= result - true_answer)
+    # using the "file["key"][:]" syntax to avoid access to
+    # the hdf5 file on the hard drive:
+    result = run["result"][:]
+    error = run["error"][:]
+
+    # The HDF5 file may contain information about the metrics.
+    # If required, we delete it:
     if recompute and "metrics" in run:
         del run["metrics"]
+    #  And eventually, load it again:
     metrics_cache = get_or_create_metrics(run)
 
     # Apply every possible metric (from "metrics = all_metrics") on the hdf5 file:
     for name, metric in metrics.items():
-        v = metric["function"](
-            true_nn_distances, run_distances, metrics_cache, properties
+        # Compute the metrics using the original dataset (if needed),
+        # the output of the algorithm, the difference with the ground truth value,
+        # the metadata of the experiment and, possibly, a cache of pre-computed
+        # metrics:
+        value = metric["function"](
+            dataset=dataset,
+            result=result,
+            error=error,
+            properties=properties,
+            metrics_cache=metrics_cache,
         )
-        results[name] = v
-        if v:
-            print("%s: %g" % (name, v))
+        results[name] = value
+        if value:
+            print("%s: %g" % (name, value))
     return (algo, algo_name, results)
 
 
@@ -206,13 +246,13 @@ def create_linestyles(unique_algorithms):
 
 
 def get_up_down(metric):
-    if metric["worst"] == float("inf"):
+    if metric["worst"] > 0:
         return "down"
     return "up"
 
 
 def get_left_right(metric):
-    if metric["worst"] == float("inf"):
+    if metric["worst"] > 0:
         return "left"
     return "right"
 

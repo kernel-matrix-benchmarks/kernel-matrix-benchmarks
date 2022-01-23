@@ -17,16 +17,12 @@
             L-infinity error, depending on the context) against <em>Run time</em>. Clicking on a plot reveals detailed
             interactive plots, including
             approximate precision and pre-computation time.</p>
-        {% for type in ['non-batch', 'batch'] %}
-        {% if len(dataset_with_distances[type]) > 0 %}
-        {% if type == 'batch' %}
-        <h2>Benchmarks for Batched Queries</h2>
-        {% else %}
-        <h2>Benchmarks for Single Queries</h2>
-        {% endif %}
+        
+        {% if len(dataset_with_distances) > 0 %}
+        <h2>Benchmarks</h2>
 
         <h2 id="datasets">Results by Dataset</h2>
-        {% for distance_data in dataset_with_distances[type] %}
+        {% for distance_data in dataset_with_distances %}
         <h3>Distance: {{ distance_data.name }} </h3>
         {% for entry in distance_data.entries %}
         <a href="./{{ entry.name }}.html">
@@ -44,7 +40,7 @@
         {% endfor %}
         <h2 id="algorithms">Results by Algorithm</h2>
         <ul class="list-inline"><b>Algorithms:</b>
-            {% for algo in algorithms[type].keys() %}
+            {% for algo in algorithms.keys() %}
             <li><a href="#{{algo}}">{{algo}}</a></li>
             {% endfor %}
         </ul>
@@ -62,5 +58,4 @@
         <hr />
         {% endfor %}
         {% endif %}
-        {% endfor %}
         {% endblock %}

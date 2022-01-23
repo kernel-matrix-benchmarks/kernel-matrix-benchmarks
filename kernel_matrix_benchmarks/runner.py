@@ -63,7 +63,7 @@ def run(definition, dataset, run_count):
     """Runs a method "run_count" times."""
 
     # Load the input data from the HDF5 file:
-    f, dimension = get_dataset(dataset)
+    f, _ = get_dataset(dataset)
     # N.B.: - The specification of our dataset format is detailed in datasets.py.
     #       - The f["key"][:] syntax forces the conversion of the data
     #         to a NumPy array, loaded in RAM.

@@ -18,7 +18,6 @@ from kernel_matrix_benchmarks.plotting.plot_variants import (
 from kernel_matrix_benchmarks.plotting.metrics import all_metrics as metrics
 from kernel_matrix_benchmarks.plotting.utils import (
     get_plot_label,
-    compute_metrics,
     compute_all_metrics,
     create_pointset,
     create_linestyles,
@@ -70,25 +69,19 @@ def convert_linestyle(ls):
 
 
 def get_run_desc(properties):
-    # TODO: Reference to count is obsolete!
-    return "%(dataset)s_%(count)d_%(distance)s" % properties
+    return "%(dataset)s_%(kernel)s" % properties
 
 
 def get_dataset_from_desc(desc):
     return desc.split("_")[0]
 
 
-def get_count_from_desc(desc):
+def get_kernel_from_desc(desc):
     return desc.split("_")[1]
 
 
-def get_distance_from_desc(desc):
-    return desc.split("_")[2]
-
-
 def get_dataset_label(desc):
-    # TODO: Reference to count is obsolete!
-    return "{} (k = {})".format(get_dataset_from_desc(desc), get_count_from_desc(desc))
+    return "{} (k = {})".format(get_dataset_from_desc(desc), get_kernel_from_desc(desc))
 
 
 def directory_path(s):
@@ -185,6 +178,8 @@ def create_plot(
         (get_plot_label(xm, ym) + additional_label).encode("utf-8")
     ).hexdigest()
 
+    # TODO: currently, all the details plot have a linear x axis
+    #       and a logarithmic y axis.
     # Insert the point coordinates in a javascript interactive plot:
     return j2_env.get_template("chartjs.template").render(
         args=args,
@@ -201,7 +196,7 @@ def create_plot(
     )
 
 
-def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
+def build_detail_site(data, label_func, j2_env, linestyles):
     """Builds a detailed interactive page for every algorithm and dataset."""
 
     for (name, runs) in data.items():
@@ -235,21 +230,19 @@ def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
                 )
 
         # Create a .png plot for the summary page:
-        # TODO: Right now, this is an ann-only recall vs time plot.
         data_for_plot = {}
         for k in runs.keys():
-            data_for_plot[k] = prepare_data(runs[k], "k-nn", "qps")
+            data_for_plot[k] = prepare_data(runs[k], "query-time", "L2-error")
 
         plot.create_plot(
             data_for_plot,
             False,
             "linear",
             "log",
-            "k-nn",  # Obsolete choice!
-            "qps",
+            "query-time",
+            "L2-error",
             args.outputdir + name + ".png",
             linestyles,
-            batch,
         )
 
         # Final render of the detailed page:
@@ -257,48 +250,38 @@ def build_detail_site(data, label_func, j2_env, linestyles, batch=False):
         with open(output_path, "w") as text_file:
             text_file.write(
                 j2_env.get_template("detail_page.html").render(
-                    title=label, plot_data=data, args=args, batch=batch
+                    title=label, plot_data=data, args=args
                 )
             )
 
 
-def build_index_site(datasets, algorithms, j2_env, file_name):
+def build_index_site(datasets, algorithms, j2_env, file_name="index.html"):
     """Builds the front page of our website (index.html)."""
 
-    dataset_data = {"batch": [], "non-batch": []}
-    for mode in ["batch", "non-batch"]:
-        # Arbitrary sorting order: first by "metric" name...
-        # TODO: Obsolete choice?
-        distance_measures = sorted(
-            set([get_distance_from_desc(e) for e in datasets[mode].keys()])
-        )
-        # ...then by dataset name:
-        sorted_datasets = sorted(
-            set([get_dataset_from_desc(e) for e in datasets[mode].keys()])
-        )
+    dataset_data = []
 
-        for dm in distance_measures:
-            d = {"name": dm.capitalize(), "entries": []}
-            for ds in sorted_datasets:
-                # Extract all experiments with the correct info...
-                matching_datasets = [
-                    e
-                    for e in datasets[mode].keys()
-                    if get_dataset_from_desc(e) == ds
-                    and get_distance_from_desc(e) == dm  # noqa
-                ]
-                # ...and sort them by increasing number of "K"-Nearest Neighbors:
-                # TODO: obsolete
-                sorted_matches = sorted(
-                    matching_datasets, key=lambda e: int(get_count_from_desc(e))
-                )
-                # Add the relevant data to a list in a dict, that will
-                # be matched by a Jinja template:
-                for idd in sorted_matches:
-                    d["entries"].append({"name": idd, "desc": get_dataset_label(idd)})
-            dataset_data[mode].append(d)
+    # Arbitrary sorting order: first by kernel name...
+    kernels = sorted(set([get_kernel_from_desc(e) for e in datasets.keys()]))
+    # ...then by dataset name:
+    sorted_datasets = sorted(set([get_dataset_from_desc(e) for e in datasets.keys()]))
 
-    with open(args.outputdir + "index.html", "w") as text_file:
+    for k in kernels:
+        d = {"name": k, "entries": []}
+        for ds in sorted_datasets:
+            # Extract all experiments with the correct info:
+            sorted_matches = [
+                e
+                for e in datasets.keys()
+                if get_dataset_from_desc(e) == ds
+                and get_kernel_from_desc(e) == k  # noqa
+            ]
+            # Add the relevant data to a list in a dict, that will
+            # be matched by a Jinja template:
+            for idd in sorted_matches:
+                d["entries"].append({"name": idd, "desc": get_dataset_label(idd)})
+        dataset_data.append(d)
+
+    with open(args.outputdir + file_name, "w") as text_file:
         text_file.write(
             j2_env.get_template("summary.html").render(
                 title="Kernel-Matrix-Benchmarks",
@@ -309,40 +292,66 @@ def build_index_site(datasets, algorithms, j2_env, file_name):
 
 
 def load_all_results():
-    """Read all result files and compute all metrics"""
+    """Read all result files and compute all metrics.
+    
+    Returns two dicts:
+        - all_runs_by_dataset = {
+                "dataset-1_kernel-1": {
+                    "algo-1": [
+                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
+                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+                        ...
+                    ],
+                    "algo-2_kernel-2": [
+                        ...
+                    ],
+                    ...
+                },
+                "dataset-2": {
+                    ...
+                }
+            }
+        - all_runs_by_algorithm = {
+                "algo-1": {
+                    "dataset-1 (k = kernel-1)": [
+                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
+                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+                        ...
+                    ],
+                    "dataset-2 (k = kernel-2)": [
+                        ...
+                    ],
+                    ...
+                },
+                "algo-2": {
+                    ...
+                }
+            }
+    """
 
-    all_runs_by_dataset = {"batch": {}, "non-batch": {}}
-    all_runs_by_algorithm = {"batch": {}, "non-batch": {}}
+    all_runs_by_dataset = {}
+    all_runs_by_algorithm = {}
     cached_true_dist = []
     old_sdn = None
 
-    # N.B.: We keep experiments "one query at a time" and "all queries at once"
-    #       separate, as they address different use cases.
-    for mode in ["non-batch", "batch"]:
-        for properties, f in results.load_all_results(batch_mode=(mode == "batch")):
-            # String identifier for a problem (dataset, kernel, ...):
-            sdn = get_run_desc(properties)
-            # If this is a new problem, we must recompute some variables:
-            if sdn != old_sdn:
-                dataset, _ = get_dataset(properties["dataset"])
-                # TODO: "distances" is obsolete, ANN-only
-                cached_true_dist = list(dataset["distances"])
-                old_sdn = sdn
+    # f is an hdf5 file, properties = dict(f.attrs) contains the relevant metadata:
+    for properties, f in results.load_all_results():
+        # String identifier for a problem (dataset, kernel, ...):
+        sdn = get_run_desc(properties)  #  "dataset_kernel"
+        # If this is a new problem, we must reload the dataset file:
+        if sdn != old_sdn:
+            dataset, _ = get_dataset(properties["dataset"])
+            old_sdn = sdn
 
-            algo_ds = get_dataset_label(sdn)
-            desc_suffix = "-batch" if mode == "batch" else ""
-            algo = properties["algo"] + desc_suffix
-            sdn += desc_suffix
-            ms = compute_all_metrics(cached_true_dist, f, properties, args.recompute)
+        algo_ds = get_dataset_label(sdn)  # "dataset (k = kernel)"
+        algo = properties["algo"]
+        ms = compute_all_metrics(dataset, f, properties, args.recompute)
 
-            # Put the run in a dict sorted by method...
-            all_runs_by_algorithm[mode].setdefault(algo, {}).setdefault(
-                algo_ds, []
-            ).append(ms)
-            # ... and in a dict sorted by dataset:
-            all_runs_by_dataset[mode].setdefault(sdn, {}).setdefault(algo, []).append(
-                ms
-            )
+        # TODO: we should separate runs by task (i.e. "product" and "solver")
+        # Put the run in a dict sorted by dataset...
+        all_runs_by_dataset.setdefault(sdn, {}).setdefault(algo, []).append(ms)
+        # ... and in a dict sorted by method:
+        all_runs_by_algorithm.setdefault(algo, {}).setdefault(algo_ds, []).append(ms)
 
     return (all_runs_by_dataset, all_runs_by_algorithm)
 
@@ -354,29 +363,18 @@ j2_env.globals.update(zip=zip, len=len)
 # Load the data:
 runs_by_ds, runs_by_algo = load_all_results()
 # Retrieve the names of the datasets - each of whom receives a detailed page:
-dataset_names = [
-    get_dataset_label(x)
-    for x in list(runs_by_ds["batch"].keys()) + list(runs_by_ds["non-batch"].keys())
-]
+dataset_names = [get_dataset_label(x) for x in list(runs_by_ds.keys())]
 # Retrieve the names of the algorithms - each of whom receives a detailed page:
-algorithm_names = list(runs_by_algo["batch"].keys()) + list(
-    runs_by_algo["non-batch"].keys()
-)
+algorithm_names = list(runs_by_algo.keys())
 
 linestyles = {**create_linestyles(dataset_names), **create_linestyles(algorithm_names)}
 ds_l = lambda label: get_dataset_label(label)
 
-# Detailed pages for datasets processed "one query at a time":
-build_detail_site(runs_by_ds["non-batch"], ds_l, j2_env, linestyles, False)
+# Detailed pages for datasets:
+build_detail_site(runs_by_ds, ds_l, j2_env, linestyles, False)
 
-# Detailed pages for datasets processed "all queries at once":
-build_detail_site(runs_by_ds["batch"], ds_l, j2_env, linestyles, True)
-
-# Detailed pages for algorithms run "one query at a time":
-build_detail_site(runs_by_algo["non-batch"], lambda x: x, j2_env, linestyles, False)
-
-# Detailed pages for algorithms run "all queries at once":
-build_detail_site(runs_by_algo["batch"], lambda x: x, j2_env, linestyles, True)
+# Detailed pages for algorithms:
+build_detail_site(runs_by_algo, lambda x: x, j2_env, linestyles, False)
 
 # Index page:
 build_index_site(runs_by_ds, runs_by_algo, j2_env, "index.html")

@@ -19,8 +19,8 @@ And the following metadata:
 - f.attrs["dataset"] = str.
     The name of the dataset.
 
-- f.attrs["algo"] = Definition (as in definitions.py).
-    The description of the algorithm used, from "algos.yaml".
+- f.attrs["algo"] = str.
+    The name of the algorithm used, from "algos.yaml".
 
 - f.attrs["name"] = str.
     The name of the method, algo.name.

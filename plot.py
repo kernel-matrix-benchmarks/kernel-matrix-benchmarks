@@ -16,13 +16,13 @@ from kernel_matrix_benchmarks.plotting.utils import (
     create_pointset,
 )
 from kernel_matrix_benchmarks.results import (
-    store_results,
+    store_result,
     load_all_results,
     get_unique_algorithms,
 )
 
 
-def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles, batch):
+def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles):
     """Creates a .png file and save it at location 'fn_out'.
     
     This routine is called using the command line, thanks to the API

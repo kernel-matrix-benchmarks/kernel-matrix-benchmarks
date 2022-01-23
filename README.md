@@ -226,15 +226,16 @@ Once you are done with your instance,
 
 ## Main files
 
-- [algos.yaml](algos.yaml): lists all supported methods and parameter values.
 - [install.py](install.py): builds the Docker images from [install/](install/).
+- [algos.yaml](algos.yaml): lists all supported methods and parameter values.
 - [kernel_matrix_benchmarks/](kernel_matrix_benchmarks/):
+  - [definitions.py](kernel_matrix_benchmarks/definitions.py): parser for [algos.yaml](algos.yaml).
   - [datasets.py](kernel_matrix_benchmarks/datasets.py): supported datasets.
   - [main.py](kernel_matrix_benchmarks/main.py): runs all supported experiments on a given dataset.
   - [runner.py](kernel_matrix_benchmarks/runner.py): runs a specific experiment and saves results in a HDF5 file.
   - [algorithms/](kernel_matrix_benchmarks/algorithms/):
-    - [definitions.py](kernel_matrix_benchmarks/algorithms/definitions.py): parser for [algos.yaml](algos.yaml).
     - [base.py](kernel_matrix_benchmarks/algorithms/base.py): common interface for the methods included in the benchmark.
+    - [bruteforce.py](kernel_matrix_benchmarks/algorithms/bruteforce.py): reference implementation with NumPy.
   - [plotting/](kernel_matrix_benchmarks/plotting/):
     - [metrics.py](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
     - [plot_variants.py](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.
