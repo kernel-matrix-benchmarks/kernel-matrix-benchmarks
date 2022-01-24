@@ -5,7 +5,9 @@ import numpy as np
 
 
 class BaseAlgorithm(object):
-    def __init__(self, *, kernel, normalize_rows=False, precision=np.float64):
+    def __init__(
+        self, *, kernel, dimension, normalize_rows=False, precision=np.float64
+    ):
         """Sets up some of the basic attributes of our algorithm.
 
         Args:
@@ -21,6 +23,7 @@ class BaseAlgorithm(object):
                 Defaults to np.float64.
         """
         self.kernel = kernel
+        self.dimension = dimension
         self.precision = precision
         self.normalize_rows = normalize_rows
         self.name = "BaseAlgorithm()"
@@ -34,7 +37,7 @@ class BaseAlgorithm(object):
         (in kilobytes), or None if this information is not available."""
         return psutil.Process().memory_info().rss / 1024
 
-    def set_query_arguments(self, *args):
+    def set_query_arguments(self, **kwargs):
         """Sets additional arguments, after the pre-computation step but before the query."""
         pass
 
