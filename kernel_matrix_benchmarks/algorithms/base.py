@@ -5,19 +5,33 @@ import numpy as np
 
 
 class BaseAlgorithm(object):
-    def __init__(self, kernel="gaussian", normalize_rows=False, precision=np.float64):
+    def __init__(self, *, kernel, normalize_rows=False, precision=np.float64):
+        """Sets up some of the basic attributes of our algorithm.
+
+        Args:
+            kernel (str):
+                The kernel function that is expected to be used on the dataset.
+            normalize_rows (bool, optional): 
+                Should we normalize the rows of the kernel matrix so that 
+                they sum up to 1? 
+                Defaults to False.
+            precision (numpy dtype, optional): 
+                Desired precision level of the computation. Note that the output 
+                array will always be cast as a float64 NumPy array. 
+                Defaults to np.float64.
+        """
         self.kernel = kernel
         self.precision = precision
         self.normalize_rows = normalize_rows
         self.name = "BaseAlgorithm()"
 
     def done(self):
+        """Frees memory and files after a computation even if an exception has been thrown."""
         pass
 
     def get_memory_usage(self):
         """Return the current memory usage of this algorithm instance
         (in kilobytes), or None if this information is not available."""
-        # return in kB for backwards compatibility
         return psutil.Process().memory_info().rss / 1024
 
     def set_query_arguments(self, *args):
@@ -38,28 +52,26 @@ class BaseProduct(BaseAlgorithm):
 
     def prepare_data(
         self,
+        *,
         source_points,
-        source_signal=None,
+        target_points,
         same_points=False,
         density_estimation=False,
-        normalize_rows=False,
     ):
         """Load data for the pre-processing step, outside of the timer.
 
         This routine is not included in the timer and may be used
-        to e.g. load the result from the RAM to a GPU device.
+        to e.g. load the input data from the RAM to a GPU device.
 
         Args:
             source_points ((M,D) array): the reference point cloud.
-            source_signal ((M,E) array or None): the reference signal.
-                If None, we assume that E=1 and that the source signal 
-                is uniformly equal to 1, i.e. we perform kernel density estimation.
-            same_points (bool): should we assume that the target point cloud 
-                is equal to the source?
-            density_estimation (bool): should we assume that the source signal 
-                is equal to 1?
-            normalize_rows (bool): should we normalize the rows of the kernel matrix
-                so that they sum up to 1?
+            target_points ((N,D) array): query points.
+            same_points (bool): 
+                Should we assume that the target point cloud is equal to the source?
+                Defaults to False.
+            density_estimation (bool): 
+                Should we assume that the source signal is equal to 1?
+                Defaults to False.
         """
         pass
 
@@ -67,19 +79,22 @@ class BaseProduct(BaseAlgorithm):
         """Fits the algorithm to a source distribution - this operation is timed."""
         pass
 
-    def prepare_query(self, target_points):
+    def prepare_query(self, *, source_signal):
         """Reformat or recasts the input target points, outside of the timer.
         
         To ensure a fair benchmark, we may need to 
         e.g. load queries on the GPU or change the numerical precision.
+
+        Args:
+            source_signal ((M,E) array or None): the reference signal.
+                Note that if self.density_estimation=None, the algorithm may assume 
+                that E=1 and that the source signal is uniformly equal to 1, 
+                i.e. we perform kernel density estimation.
         """
         pass
 
     def query(self):
         """Performs the computation of interest for all target points - this operation is timed.
-
-        Args:
-            target_points ((N,D) array): query points.
 
         Returns:
             None: see the get_result() method below.

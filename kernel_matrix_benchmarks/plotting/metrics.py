@@ -19,7 +19,7 @@ all_metrics = {
                 - properties, dict of metadata associated to the algorithm run.
                 - metrics_cache, hdf5 file group where we can store some computations.
     },
-    "key-for-metric-1": {
+    "key-for-metric-2": {
         ...
     }
 }
