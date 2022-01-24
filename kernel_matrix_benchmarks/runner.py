@@ -225,7 +225,6 @@ def run_from_cmdline():
         constructor=args.constructor,
         arguments=algo_args,
         query_argument_groups=query_args,
-        disabled=False,
     )
 
     # Presumably, we execute this command inside a Docker:

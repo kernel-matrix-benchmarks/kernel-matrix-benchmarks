@@ -163,7 +163,9 @@ def main():
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml
-    definitions = get_definitions(args.definitions, dimension, point_type, kernel)
+    definitions = get_definitions(
+        args.definitions, dimension, point_type, kernel, run_disabled=args.run_disabled
+    )
 
     # Filter out, from the loaded definitions, all those query argument groups
     # that correspond to experiments that have already been run. (This might
@@ -265,14 +267,6 @@ def main():
 
         # Keep the modules that can be loaded:
         definitions = [d for d in definitions if _test(d)]
-
-    # Discard the methods with flag "disabled: false"
-    if not args.run_disabled:
-        if len([d for d in definitions if d.disabled]):
-            logger.info(
-                f"Not running disabled algorithms {[d for d in definitions if d.disabled]}"
-            )
-        definitions = [d for d in definitions if not d.disabled]
 
     #  For debugging, the user may wish to only run the first "n" methods:
     if args.max_n_algorithms >= 0:

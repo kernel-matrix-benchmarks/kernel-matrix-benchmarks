@@ -35,7 +35,7 @@ nicealgorithm:
   # - datasets: a list of string expressions.
   #     If any of these expressions matches the name of the dataset/experiment,
   #     the run-group will be used. Note that all datasets are named as:
-  #     "{dataset-label}-{Npoints}-{Dimpoints}-{kernel-name}".
+  #     "{dataset-label}-D{Dimpoints}-E{Dimsignal}-M{Nsource}-N{Ntarget}-{kernel-name}".
   #     Consequently, using e.g. "*-gaussian" is a simple way of filtering
   #     experiments that are designed for Gaussian kernels.
   #
@@ -62,8 +62,8 @@ nicealgorithm:
   run-groups:
     simple-run: # Choose an arbitrary name for the group of runs.
       datasets: # Match all experiments with...
-        - "*-gaussian" # Gaussian *or* ...
-        - "*-absolute-exponential" # absolute exponential kernels.
+        - "*-E1-*-gaussian" # Gaussian kernels and scalar signal *or* ...
+        - "*-D3-*" # source and target points in dimension 3.
       args: # Appended to {"kernel": ..., "dimension": ...} when calling the constructor.
         - { "K": 10, "tol": 0.01 }
 
