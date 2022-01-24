@@ -1,14 +1,8 @@
 # Choices of (x_axis, y_axis) pairs that we want to display
 # on the website in the "details" page.
-# TODO: All references to k-nn (=recall) and qps are obsolete
+# The cost and performance keys are defined in all_metrics in metrics.py.
 all_plot_variants = {
-    "recall/time": ("k-nn", "qps"),
-    "recall/buildtime": ("k-nn", "build"),
-    "recall/indexsize": ("k-nn", "indexsize"),
-    "recall/distcomps": ("k-nn", "distcomps"),
-    "rel/time": ("rel", "qps"),
-    "recall/candidates": ("k-nn", "candidates"),
-    "recall/qpssize": ("k-nn", "queriessize"),
-    "eps/time": ("epsilon", "qps"),
-    "largeeps/time": ("largeepsilon", "qps"),
+    cost + "/" + perf: (cost, perf)
+    for cost in ["total-time", "query-time", "build-time", "memory-footprint"]
+    for perf in ["rmse-error", "max-error", "mean-error", "median-error"]
 }

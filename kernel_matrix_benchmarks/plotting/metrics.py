@@ -23,17 +23,6 @@ all_metrics = {
         ...
     }
 }
-
-
-
-The 
-(
-            dataset=dataset,
-            result=result,
-            error=error,
-            properties=properties,
-            metrics_cache=metrics_cache,
-        )
 """
 
 
