@@ -94,6 +94,7 @@ def get_definitions(
     task="product",
     hardware="CPU",
     kernel="gaussian",
+    run_disabled=False,
 ):
     # Step 1: Load the .yaml file --------------------------
     # Load "algos.yaml" using the standard .yaml parser:
@@ -104,7 +105,9 @@ def get_definitions(
     for (name, algo) in all_definitions.items():
         # Step 2.a: Check that the definition is meant to be used.
         if (  # We skip the current iteration if:
-            algo.get("disabled", False)  # The algorithm has been disabled
+            (  # The algorithm has been disabled
+                algo.get("disabled", False) and not run_disabled
+            )
             or algo.get("hardware", "CPU") != hardware  # The hardware is not right
             or not algo.get(task, False)  # The algo does not support the current task
         ):

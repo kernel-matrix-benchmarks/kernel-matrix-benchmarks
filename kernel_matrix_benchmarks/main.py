@@ -78,8 +78,22 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="uniform-sphere-1k-3-inverse-distance",
+        default="uniform-sphere-D3-E1-M1000-N1000-inverse-distance",
         choices=DATASETS.keys(),
+    )
+    parser.add_argument(
+        "--task",
+        metavar="TASK",
+        help="the type of computation to benchmark",
+        default="product",
+        choices=["product", "attention", "solver"],
+    )
+    parser.add_argument(
+        "--hardware",
+        metavar="INSTANCE",
+        help="the type of instance that is currently running the script",
+        default="CPU",
+        choices=["CPU", "GPU"],
     )
     parser.add_argument(
         "--definitions",
@@ -158,13 +172,18 @@ def main():
     dataset, dimension = get_dataset(args.dataset)
 
     # Properties of the dataset:
-    point_type = dataset.attrs.get("point_type", "float")  # "float", "binary", etc.?
     kernel = dataset.attrs["kernel"]
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml
     definitions = get_definitions(
-        args.definitions, dimension, point_type, kernel, run_disabled=args.run_disabled
+        definition_file=args.definitions,
+        dimension=dimension,
+        dataset=args.dataset,
+        task=args.task,
+        hardware=args.hardware,
+        kernel=kernel,
+        run_disabled=args.run_disabled,
     )
 
     # Filter out, from the loaded definitions, all those query argument groups
