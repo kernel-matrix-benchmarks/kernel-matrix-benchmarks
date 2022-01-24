@@ -141,15 +141,14 @@ def run(definition, dataset, run_count):
         # Make sure that algorithms with no query argument groups still get run
         # once by providing them with a single, empty, harmless group
         if not query_argument_groups:
-            query_argument_groups = [[]]
+            query_argument_groups = [{}]
 
         for pos, query_arguments in enumerate(query_argument_groups, 1):
             print(
                 "Running query argument group %d of %d..."
                 % (pos, len(query_argument_groups))
             )
-            if query_arguments:  # ...is not empty:
-                algo.set_query_arguments(*query_arguments)
+            algo.set_query_arguments(**query_arguments)
 
             # Benchmark the query:
             descriptor, results, error = run_individual_query(
@@ -205,13 +204,13 @@ def run_from_cmdline():
     )
     parser.add_argument(
         "build",
-        help='JSON of arguments to pass to the constructor. E.g. ["angular", 100]',
+        help='JSON of arguments to pass to the constructor. E.g. {"precision": "float32"}',
     )
     parser.add_argument(
         "queries",
-        help="JSON of arguments to pass to the queries. E.g. [100]",
+        help='JSON of a list of arguments to pass prior to the queries. E.g. [{"H": 5}, {"H":10}]',
         nargs="*",
-        default=[],
+        default=[{}],
     )
     args = parser.parse_args()
     algo_args = json.loads(args.build)

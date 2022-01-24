@@ -193,10 +193,7 @@ def main():
     filtered_definitions = []
     for definition in definitions:
 
-        # N.B.: Most experiments do not define a "query-arg-groups".
-        query_argument_groups = definition.query_argument_groups
-        if not query_argument_groups:
-            query_argument_groups = [[]]
+        query_argument_groups = definition.query_argument_groups  # = [{}] in most cases
 
         # Filter out, for this specific "definition" (i.e. Python object + parameters)
         # what are the arguments "at query time" that have already been tried.

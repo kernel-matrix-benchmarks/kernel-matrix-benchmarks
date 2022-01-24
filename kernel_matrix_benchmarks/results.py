@@ -65,7 +65,7 @@ def get_result_filename(
         d.append(dataset)
     if definition:
         d.append(definition.algorithm)
-        data = definition.arguments + query_arguments
+        data = dict(definition.arguments, **query_arguments)
         # The filename is a "flat" expansion of the dict of parameters,
         # with all "non alphanumerical symbols" replaced by "_".
         d.append(
