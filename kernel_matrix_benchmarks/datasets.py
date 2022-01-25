@@ -17,6 +17,9 @@ A dataset file "f" contains the following attributes and tables:
 - f["target_signal"] = (N,E) float64 array ("a").
     The N signal vectors a_i associated to each point x_i.
 
+- f.attrs["task"] = "product" | "solver" | "attention"
+    The target task for this dataset.
+
 - f.attrs["point_type"] = "float"
     For now, we only support real-valued vectors - but permutations and other
     discrete objects may be supported in the future.
@@ -117,7 +120,9 @@ def get_dataset(which):
 
 
 def write_output(
+    *,
     filename,
+    task,
     kernel,
     source_points,
     target_points=None,
@@ -132,6 +137,7 @@ def write_output(
         # First attributes: kernel type ("gaussian"...), point_type ("float"),
         # are we normalizing the rows of the kernel matrix (for attention layers).
         f.attrs["kernel"] = kernel
+        f.attrs["task"] = task
         f.attrs["point_type"] = point_type
         f.attrs["normalize_rows"] = normalize_rows
 
@@ -177,7 +183,12 @@ def write_output(
 
 
 def uniform_sphere(
-    n_points=1000, dimension=3, radius=1, kernel="gaussian", normalize_rows=False
+    n_points=1000,
+    dimension=3,
+    radius=1,
+    kernel="gaussian",
+    task="product",
+    normalize_rows=False,
 ):
     def write_to(filename):
         # Set the seed for reproducible results:
@@ -197,9 +208,10 @@ def uniform_sphere(
 
         # Compute the ground truth output signal and save to file:
         write_output(
-            filename,
-            kernel,
-            source_points,
+            filename=filename,
+            task=task,
+            kernel=kernel,
+            source_points=source_points,
             target_points=None,  # == source_points
             source_signal=source_signal,
             point_type="float",
@@ -305,8 +317,11 @@ def fashion_mnist(out_fn):
 # Full list of supported datasets ----------------------------------------------
 
 DATASETS = {
-    "uniform-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
-        n_points=1000, dimension=3, radius=1, kernel="inverse-distance"
+    "product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
+        n_points=1000, dimension=3, radius=1, task="product", kernel="inverse-distance"
+    ),
+    "solver-uniform-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
+        n_points=1000, dimension=3, radius=1, task="solver", kernel="inverse-distance"
     ),
     # "mnist-784-euclidean": mnist,
     # "fashion-mnist-784-euclidean": fashion_mnist,

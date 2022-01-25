@@ -81,7 +81,7 @@ def get_kernel_from_desc(desc):
 
 
 def get_dataset_label(desc):
-    return "{} (k = {})".format(get_dataset_from_desc(desc), get_kernel_from_desc(desc))
+    return "{}".format(get_dataset_from_desc(desc))
 
 
 def directory_path(s):

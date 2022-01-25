@@ -11,7 +11,7 @@
         benchmarking system.
     </p>
     <div id="results">
-        <h1>Benchmarking Results</h1>
+        <h1>Results</h1>
         <p>Results are split by kernel and dataset. At the bottom of the page, you can find an overview of an
             algorithm's performance on all datasets. The plots shown depict <em>Precision</em> (such as an L1, L2 or
             L-infinity error, depending on the context) against <em>Run time</em>. Clicking on a plot reveals detailed
@@ -19,11 +19,10 @@
             approximate precision and pre-computation time.</p>
         
         {% if len(dataset_with_distances) > 0 %}
-        <h2>Benchmarks</h2>
 
         <h2 id="datasets">Results by Dataset</h2>
         {% for distance_data in dataset_with_distances %}
-        <h3>Distance: {{ distance_data.name }} </h3>
+        <h3>Kernel: {{ distance_data.name }} </h3>
         {% for entry in distance_data.entries %}
         <a href="./{{ entry.name }}.html">
             <div class="row" id="{{entry.name}}">

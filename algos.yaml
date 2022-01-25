@@ -35,7 +35,7 @@ nicealgorithm:
   # - datasets: a list of string expressions.
   #     If any of these expressions matches the name of the dataset/experiment,
   #     the run-group will be used. Note that all datasets are named as:
-  #     "{dataset-label}-D{Dimpoints}-E{Dimsignal}-M{Nsource}-N{Ntarget}-{kernel-name}".
+  #     "{task}-{dataset-label}-D{Dimpoints}-E{Dimsignal}-M{Nsource}-N{Ntarget}-{kernel-name}".
   #     Consequently, using e.g. "*-gaussian" is a simple way of filtering
   #     experiments that are designed for Gaussian kernels.
   #
@@ -69,7 +69,7 @@ nicealgorithm:
 
     two-runs:
       datasets:
-        - "uniform-sphere-*-inverse-distance"
+        - "*-uniform-sphere-*-inverse-distance"
       args:
         - { "K": 10, "tol": 0.01 }
         - { "K": 50, "tol": 0.001 }

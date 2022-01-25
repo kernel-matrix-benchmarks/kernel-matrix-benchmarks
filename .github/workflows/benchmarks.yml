@@ -9,9 +9,9 @@ jobs:
       matrix:
         include:
           - library: sklearn
-            dataset: uniform-sphere-D3-E1-M1000-N1000-inverse-distance
+            dataset: product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance
           - library: scipy
-            dataset: uniform-sphere-D3-E1-M1000-N1000-inverse-distance
+            dataset: product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance
       fail-fast: false
 
     steps:

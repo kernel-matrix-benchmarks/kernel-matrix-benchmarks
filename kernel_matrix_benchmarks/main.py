@@ -82,15 +82,8 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="uniform-sphere-D3-E1-M1000-N1000-inverse-distance",
+        default="product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance",
         choices=DATASETS.keys(),
-    )
-    parser.add_argument(
-        "--task",
-        metavar="TASK",
-        help="the type of computation to benchmark",
-        default="product",
-        choices=["product", "attention", "solver"],
     )
     parser.add_argument(
         "--hardware",
@@ -177,6 +170,7 @@ def main():
 
     # Properties of the dataset:
     kernel = dataset.attrs["kernel"]
+    task = dataset.attrs["task"]
     normalize_rows = dataset.attrs.get("normalize_rows", False)
 
     # Definition of the input problem.
@@ -185,7 +179,7 @@ def main():
         definition_file=args.definitions,
         dimension=dimension,
         dataset=args.dataset,
-        task=args.task,
+        task=task,
         hardware=args.hardware,
         kernel=kernel,
         normalize_rows=normalize_rows,
