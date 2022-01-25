@@ -90,11 +90,11 @@ def directory_path(s):
     return s + "/"
 
 
-def prepare_data(data, xn, yn):
+def prepare_data(*, data, x_name, y_name):
     """Change format from (algo, instance, dict) to (algo, instance, x, y)."""
     res = []
     for algo, algo_name, result in data:
-        res.append((algo, algo_name, result[xn], result[yn]))
+        res.append((algo, algo_name, result[x_name], result[y_name]))
     return res
 
 
@@ -127,26 +127,27 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def get_lines(all_data, xn, yn, render_all_points):
+def get_lines(*, data, x_name, y_name, render_all_points):
     """For each algorithm run on a dataset, obtain its performance
     curve coords.
     
-    xn, yn are string identifiers for performance metrics,
+    x_name, y_name are string identifiers for performance metrics,
     i.e. keys for the dict "all_metrics"
     defined in kernel_matrix_benchmarks/plotting/metrics.py.
     """
     plot_data = []
-    for algo in sorted(all_data.keys(), key=lambda x: x.lower()):
-        xs, ys, ls, axs, ays, als = create_pointset(
-            prepare_data(all_data[algo], xn, yn), xn, yn
-        )
-        if render_all_points:
-            xs, ys, ls = axs, ays, als
+    for algo in sorted(data.keys(), key=lambda x: x.lower()):
+        points = create_pointset(
+            data=prepare_data(data=data[algo], x_name=x_name, y_name=y_name),
+            x_name=x_name,
+            y_name=y_name,
+        )["all" if render_all_points else "front"]
         plot_data.append(
             {
                 "name": algo,  # Label of the "line" or "scatter" plot.
-                "coords": zip(xs, ys),  # Coordinates in the plots.
-                "labels": ls,  # Hover on points in the interactive visualization.
+                "coords": zip(points["x"], points["y"]),  # Coordinates in the plots.
+                # Hover label on points in the interactive visualization:
+                "labels": points["labels"],
                 "scatter": render_all_points,  # Scatter vs. line plot
             }
         )
@@ -154,28 +155,32 @@ def get_lines(all_data, xn, yn, render_all_points):
 
 
 def create_plot(
-    all_data, xn, yn, linestyle, j2_env, additional_label="", plottype="line"
+    *, data, x_name, y_name, linestyle, j2_env, additional_label="", plottype="line"
 ):
     # Load the relevant "metrics" functions for the x and y axes.
-    xm, ym = (metrics[xn], metrics[yn])
+    x_metric, y_metric = (metrics[x_name], metrics[y_name])
     render_all_points = plottype == "bubble"  # "line" vs "bubble"
     # Extract the Pareto frontier vs just retrieve the full point set:
-    plot_data = get_lines(all_data, xn, yn, render_all_points)
+    plot_data = get_lines(
+        data=data, x_name=x_name, y_name=y_name, render_all_points=render_all_points
+    )
 
     # Insert the point coordinates in a tikzpicture:
     latex_code = j2_env.get_template("latex.template").render(
         plot_data=plot_data,
-        caption=get_plot_label(xm, ym),
-        xlabel=xm["description"],
-        ylabel=ym["description"],
+        caption=get_plot_label(x_metric, y_metric),
+        xlabel=x_metric["description"],
+        ylabel=y_metric["description"],
     )
 
     #  Mmmm... Do we really need to recompute the Pareto frontier here?
     # TODO: I leave it here just in case.
-    plot_data = get_lines(all_data, xn, yn, render_all_points)
+    plot_data = get_lines(
+        data=data, x_name=x_name, y_name=y_name, render_all_points=render_all_points
+    )
 
     button_label = hashlib.sha224(
-        (get_plot_label(xm, ym) + additional_label).encode("utf-8")
+        (get_plot_label(x_metric, y_metric) + additional_label).encode("utf-8")
     ).hexdigest()
 
     # TODO: currently, all the details plot have a linear x axis
@@ -186,10 +191,10 @@ def create_plot(
         latex_code=latex_code,
         button_label=button_label,
         data_points=plot_data,
-        xlabel=xm["description"],
-        ylabel=ym["description"],
+        xlabel=x_metric["description"],
+        ylabel=y_metric["description"],
         plottype=plottype,
-        plot_label=get_plot_label(xm, ym),
+        plot_label=get_plot_label(x_metric, y_metric),
         label=additional_label,
         linestyle=linestyle,
         render_all_points=render_all_points,
@@ -208,10 +213,17 @@ def build_detail_site(data, label_func, j2_env, linestyles):
         # Loop over the required pairs of (xaxis, yaxis):
         for plottype in args.plottype:
             # Select the names of the variables on the "x" and "y" axes.
-            xn, yn = plot_variants[plottype]
+            x_name, y_name = plot_variants[plottype]
             # Display the Pareto fronts:
+
             data["normal"].append(
-                create_plot(runs, xn, yn, convert_linestyle(linestyles), j2_env)
+                create_plot(
+                    data=runs,
+                    x_name=x_name,
+                    y_name=y_name,
+                    linestyle=convert_linestyle(linestyles),
+                    j2_env=j2_env,
+                )
             )
             # If required, we also display the full point clouds.
             # This is especially useful when tuning the experiments
@@ -219,30 +231,32 @@ def build_detail_site(data, label_func, j2_env, linestyles):
             if args.scatter:
                 data["scatter"].append(
                     create_plot(
-                        runs,
-                        xn,
-                        yn,
-                        convert_linestyle(linestyles),
-                        j2_env,
-                        "Scatterplot ",
-                        "bubble",
+                        data=runs,
+                        x_name=x_name,
+                        y_name=y_name,
+                        linestyle=convert_linestyle(linestyles),
+                        j2_env=j2_env,
+                        additional_label="Scatterplot ",
+                        plottype="bubble",
                     )
                 )
 
         # Create a .png plot for the summary page:
         data_for_plot = {}
         for k in runs.keys():
-            data_for_plot[k] = prepare_data(runs[k], "query-time", "L2-error")
+            data_for_plot[k] = prepare_data(
+                data=runs[k], x_name="total-time", y_name="rmse-error"
+            )
 
         plot.create_plot(
-            data_for_plot,
-            False,
-            "linear",
-            "log",
-            "query-time",
-            "L2-error",
-            args.outputdir + name + ".png",
-            linestyles,
+            data=data_for_plot,
+            raw=False,
+            x_scale="log",
+            y_scale="log",
+            x_name="total-time",
+            y_name="rmse-error",
+            fn_out=args.outputdir + name + ".png",
+            linestyles=linestyles,
         )
 
         # Final render of the detailed page:

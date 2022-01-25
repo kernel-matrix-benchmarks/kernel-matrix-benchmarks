@@ -19,8 +19,8 @@ from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
 from kernel_matrix_benchmarks.results import store_result
 
 
-def run(definition, dataset, run_count):
-    """Runs a method "run_count" times."""
+def run(*, definition, dataset, runs):
+    """Runs a method "runs" times."""
 
     # Load the input data from the HDF5 file:
     f, _ = get_dataset(dataset)
@@ -51,12 +51,12 @@ def run(definition, dataset, run_count):
     # We run our algorithm in a try-catch structure:
     try:
 
-        # We try an experiment "run_count" times and keep the best run time:
+        # We try an experiment "runs" times and keep the best run time:
         algo = None
         build_time = float("inf")
         mem_footprint = float("inf")
 
-        for i in range(run_count):
+        for i in range(runs):
 
             # Step 0: instantiate the algorithm
             _algo = instantiate_algorithm(definition)
@@ -112,12 +112,12 @@ def run(definition, dataset, run_count):
             algo.set_query_arguments(**query_arguments)
 
             # Step 3: Actual query ---------------------------------------------
-            # We try an experiment "run_count" times and keep the best run time:
+            # We try an experiment "runs" times and keep the best run time:
             query_time = float("inf")
             result = None
 
-            for i in range(run_count):
-                print("Run %d/%d..." % (i + 1, run_count))
+            for i in range(runs):
+                print("Run %d/%d..." % (i + 1, runs))
 
                 # To ensure a fair benchmark, we may need to reformat queries
                 # before launching the timer, e.g. to load them on the GPU or change the input format:
@@ -137,16 +137,16 @@ def run(definition, dataset, run_count):
                     result = _result
 
             # Return all types of metadata (attrs) and the results array:
-            descriptor = dict(
+            attrs = dict(
                 {
+                    "dataset": dataset,
+                    "algo": definition.algorithm,
+                    "name": str(algo),
+                    "kernel": kernel,
+                    "run_count": runs,
                     "build_time": build_time,
                     "query_time": query_time,
                     "memory_footprint": mem_footprint,
-                    "algo": definition.algorithm,
-                    "dataset": dataset,
-                    "name": str(algo),
-                    "run_count": run_count,
-                    "kernel": kernel,
                 },
                 **algo.get_additional(),
             )
@@ -156,9 +156,9 @@ def run(definition, dataset, run_count):
                 dataset=dataset,
                 definition=definition,
                 query_arguments=query_arguments,
-                attrs=descriptor,
                 result=result,
                 error=result - true_answer,
+                attrs=attrs,
             )
     finally:
         algo.done()
@@ -224,12 +224,10 @@ def run_from_cmdline():
     )
 
     # Presumably, we execute this command inside a Docker:
-    run(definition, args.dataset, args.runs)
+    run(definition=definition, dataset=args.dataset, runs=args.runs)
 
 
-def run_docker(
-    definition, dataset, count, runs, timeout, batch, cpu_limit, mem_limit=None
-):
+def run_docker(*, definition, dataset, runs, timeout, cpu_limit, mem_limit=None):
     # Arguments for the entry point defined in "install/Dockerfile",
     # the parent Docker image for all our models:
     # `python3 -u run_algorithm.py` + the options below

@@ -53,7 +53,7 @@ def run_worker(cpu, args, queue):
         if args.local:
             # Case 1: the user does not want to bother with Docker,
             #    e.g. when writing and testing a pull request on a local machine.
-            run(definition, args.dataset, args.runs)
+            run(definition=definition, dataset=args.dataset, runs=args.runs)
 
         else:
             # Case 2: the user is using Docker, e.g. when rendering the website.
@@ -61,9 +61,13 @@ def run_worker(cpu, args, queue):
             mem_limit = int((psutil.virtual_memory().available - memory_margin))
             #  Use all available CPUs:
             cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
-
             run_docker(
-                definition, args.dataset, args.runs, args.timeout, cpu_limit, mem_limit,
+                definition=definition,
+                dataset=args.dataset,
+                runs=args.runs,
+                timeout=args.timeout,
+                cpu_limit=cpu_limit,
+                mem_limit=mem_limit,
             )
 
 

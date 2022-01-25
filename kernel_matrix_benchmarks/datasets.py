@@ -156,14 +156,20 @@ def write_output(
             f.attrs["density_estimation"] = False
 
         # Bruteforce computation for the "ground truth" output signal:
-        gt = GroundTruth(kernel=kernel, normalize_rows=normalize_rows)
+        gt = GroundTruth(
+            kernel=kernel,
+            dimension=source_points.shape[-1],
+            normalize_rows=normalize_rows,
+        )
         # N.B.: The [:] syntax is there to make sure that we convert
         # the content of the hdf5 file to a NumPy array:
-        gt.fit(f["source_points"][:], f["source_signal"][:])
-        gt.batch_query(f["target_points"][:])
+        gt.prepare_data(f["source_points"][:], f["target_points"][:])
+        gt.fit()
+        gt.prepare_query(f["source_signal"][:])
+        gt.query()
 
         # Fourth data array: target signal a_1, ..., a_N:
-        f["target_signal"] = gt.get_batch_results()
+        f["target_signal"] = gt.get_result()
 
 
 # Synthetic test case: uniform sample on a sphere ------------------------------
