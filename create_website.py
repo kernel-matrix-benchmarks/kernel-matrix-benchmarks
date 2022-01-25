@@ -207,7 +207,7 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
         print("Building '%s'" % name)
         all_runs = runs.keys()
         label = label_func(name)
-        data = {"normal": [], "scatter": []}
+        point_data = {"normal": [], "scatter": []}
 
         # Loop over the required pairs of (xaxis, yaxis):
         for plottype in args.plottype:
@@ -215,7 +215,7 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
             x_name, y_name = plot_variants[plottype]
             # Display the Pareto fronts:
 
-            data["normal"].append(
+            point_data["normal"].append(
                 create_plot(
                     data=runs,
                     x_name=x_name,
@@ -228,7 +228,7 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
             # This is especially useful when tuning the experiments
             # in algos.yaml.
             if args.scatter:
-                data["scatter"].append(
+                point_data["scatter"].append(
                     create_plot(
                         data=runs,
                         x_name=x_name,
@@ -263,7 +263,7 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
         with open(output_path, "w") as text_file:
             text_file.write(
                 j2_env.get_template("detail_page.html").render(
-                    title=label, plot_data=data, args=args
+                    title=label, plot_data=point_data, args=args
                 )
             )
 
