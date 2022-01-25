@@ -121,7 +121,7 @@ class BaseSolver(BaseAlgorithm):
 
     task = "solver"
 
-    def prepare_data(self, source_points):
+    def prepare_data(self, *, source_points):
         """Load data for the pre-processing step, outside of the timer.
 
         This routine is not included in the timer and may be used
@@ -136,19 +136,19 @@ class BaseSolver(BaseAlgorithm):
         """Fits the algorithm to a source distribution - this operation is timed."""
         pass
 
-    def prepare_query(self, target_signal):
+    def prepare_query(self, *, target_signal):
         """Reformat or recasts the input target signal, outside of the timer.
         
         To ensure a fair benchmark, we may need to 
         e.g. load the signal on the GPU or change the numerical precision.
+        
+        Args:
+            target_signal ((N,E) array): output of the kernel matrix product.
         """
         pass
 
-    def query(self, target_signal):
+    def query(self):
         """Computes the solution of a kernel linear system and store it in self.res - this operation is timed.
-
-        Args:
-            target_signal ((N,E) array): output of the kernel matrix product.
 
         Returns:
             None: see the get_result() method below.

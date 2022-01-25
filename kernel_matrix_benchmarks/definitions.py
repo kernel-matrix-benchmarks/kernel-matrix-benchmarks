@@ -94,6 +94,7 @@ def get_definitions(
     task="product",
     hardware="CPU",
     kernel="gaussian",
+    normalize_rows=False,
     run_disabled=False,
 ):
     # Step 1: Load the .yaml file --------------------------
@@ -140,7 +141,11 @@ def get_definitions(
             # Step 2.f: Turn these lists of arguments into full, self-contained
             # descriptions of our experiments.
             for args in all_args:
-                base_args = {"kernel": kernel, "dimension": dimension}
+                base_args = {
+                    "kernel": kernel,
+                    "dimension": dimension,
+                    "normalize_rows": normalize_rows,
+                }
                 aargs = dict(base_args, **args)
 
                 # The final definition object - a namedtuple:

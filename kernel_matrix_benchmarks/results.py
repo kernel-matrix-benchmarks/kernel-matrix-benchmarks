@@ -74,7 +74,7 @@ def get_result_filename(
     return os.path.join(*d)
 
 
-def store_result(dataset, definition, query_arguments, attrs, result, error):
+def store_result(*, dataset, definition, query_arguments, attrs, result, error):
     """Stores the raw output of a computation."""
 
     # The result filename looks like

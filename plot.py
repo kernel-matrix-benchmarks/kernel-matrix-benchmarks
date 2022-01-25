@@ -16,7 +16,6 @@ from kernel_matrix_benchmarks.plotting.utils import (
     create_pointset,
 )
 from kernel_matrix_benchmarks.results import (
-    store_result,
     load_all_results,
     get_unique_algorithms,
 )

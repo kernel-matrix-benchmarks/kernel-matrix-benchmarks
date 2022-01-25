@@ -173,6 +173,7 @@ def main():
 
     # Properties of the dataset:
     kernel = dataset.attrs["kernel"]
+    normalize_rows = dataset.attrs.get("normalize_rows", False)
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml
@@ -183,6 +184,7 @@ def main():
         task=args.task,
         hardware=args.hardware,
         kernel=kernel,
+        normalize_rows=normalize_rows,
         run_disabled=args.run_disabled,
     )
 
