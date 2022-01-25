@@ -128,8 +128,7 @@ args = parser.parse_args()
 
 
 def get_lines(*, data, x_name, y_name, render_all_points):
-    """For each algorithm run on a dataset, obtain its performance
-    curve coords.
+    """For each algorithm run on a dataset, obtain its performance curve coords.
     
     x_name, y_name are string identifiers for performance metrics,
     i.e. keys for the dict "all_metrics"

@@ -33,8 +33,7 @@
                             scales: {
                                 xAxes: [{
                                     display: true,
-                                    type: 'linear',
-                                    max: '1',
+                                    type: 'logarithmic',
                                     position: 'bottom',
                                     scaleLabel: {
                                         display: true,
