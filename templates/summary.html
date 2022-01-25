@@ -44,7 +44,7 @@
             <li><a href="#{{algo}}">{{algo}}</a></li>
             {% endfor %}
         </ul>
-        {% for algo in algorithms[type].keys()%}
+        {% for algo in algorithms.keys()%}
         <a href="./{{ algo }}.html">
             <div class="row" id="{{algo}}">
                 <div class="col-md-4 bg-success">

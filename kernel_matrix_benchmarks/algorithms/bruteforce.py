@@ -1,13 +1,18 @@
 from __future__ import absolute_import
 import numpy as np
 import scipy
+from scipy.linalg import solve, lstsq
 from kernel_matrix_benchmarks.algorithms.base import BaseProduct, BaseSolver
 
 
 def inverse_square_root(sqdists):
     """Inefficient implementation of "rsqrt", which is not supported by NumPy."""
-    res = 1 / np.sqrt(sqdists)
-    res[sqdists == 0] = 0
+    sqdists_0 = np.maximum(sqdists, 0)
+    # Work-around to avoid divisions by zero:
+    mask = sqdists_0 < 1e-5
+    sqdists_0[mask] = 1
+    res = 1 / np.sqrt(sqdists_0)
+    res[mask] = 0
     return res
 
 
@@ -163,11 +168,12 @@ class BruteForceSolverLAPACK(BaseSolver):
 
     def fit(self):
         """Pre-computes the kernel matrix."""
-        self.K_ij = kernel_matrix(kernel=self.kernel, source_points=self.source_points,)
+        self.K_ij = kernel_matrix(kernel=self.kernel, source_points=self.source_points)
 
     def prepare_query(self, *, target_signal):
         # Cast to the required precision and as contiguous array for top performance:
         self.target_signal = np.ascontiguousarray(target_signal, dtype=self.precision)
 
     def query(self):
-        self.res = scipy.linalg.solve(self.K_ij, self.target_signal, assume_a="pos")
+        # self.res = solve(self.K_ij, self.target_signal, assume_a="pos")
+        self.res = lstsq(self.K_ij, self.target_signal)[0]

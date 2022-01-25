@@ -46,7 +46,6 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
         (handle,) = plt.plot(
             points["front"]["x"],
             points["front"]["y"],
-            "-",
             label=algo,
             color=color,
             ms=7,
@@ -60,7 +59,6 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
             (handle2,) = plt.plot(
                 points["all"]["x"],
                 points["all"]["y"],
-                "-",
                 label=algo,
                 color=faded,
                 ms=5,

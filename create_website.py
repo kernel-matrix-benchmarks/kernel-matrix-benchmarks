@@ -200,7 +200,7 @@ def create_plot(
     )
 
 
-def build_detail_site(data, label_func, j2_env, linestyles):
+def build_detail_site(*, data, label_func, j2_env, linestyles):
     """Builds a detailed interactive page for every algorithm and dataset."""
 
     for (name, runs) in data.items():
@@ -384,10 +384,14 @@ linestyles = {**create_linestyles(dataset_names), **create_linestyles(algorithm_
 ds_l = lambda label: get_dataset_label(label)
 
 # Detailed pages for datasets:
-build_detail_site(runs_by_ds, ds_l, j2_env, linestyles, False)
+build_detail_site(
+    data=runs_by_ds, label_func=ds_l, j2_env=j2_env, linestyles=linestyles
+)
 
 # Detailed pages for algorithms:
-build_detail_site(runs_by_algo, lambda x: x, j2_env, linestyles, False)
+build_detail_site(
+    data=runs_by_algo, label_func=lambda x: x, j2_env=j2_env, linestyles=linestyles
+)
 
 # Index page:
 build_index_site(runs_by_ds, runs_by_algo, j2_env, "index.html")

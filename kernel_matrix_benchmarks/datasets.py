@@ -126,7 +126,6 @@ def write_output(
     normalize_rows=False,
 ):
     """Compute the ground truth output signal and save to a HDF5 file."""
-    from kernel_matrix_benchmarks.algorithms.bruteforce import BruteForceProduct
 
     # Handles file opening/closure:
     with h5py.File(filename, "w") as f:
@@ -163,9 +162,11 @@ def write_output(
         )
         # N.B.: The [:] syntax is there to make sure that we convert
         # the content of the hdf5 file to a NumPy array:
-        gt.prepare_data(f["source_points"][:], f["target_points"][:])
+        gt.prepare_data(
+            source_points=f["source_points"][:], target_points=f["target_points"][:]
+        )
         gt.fit()
-        gt.prepare_query(f["source_signal"][:])
+        gt.prepare_query(source_signal=f["source_signal"][:])
         gt.query()
 
         # Fourth data array: target signal a_1, ..., a_N:

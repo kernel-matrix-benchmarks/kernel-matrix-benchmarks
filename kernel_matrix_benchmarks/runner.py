@@ -41,8 +41,8 @@ def run(*, definition, dataset, runs):
     normalize_rows = f.attrs["normalize_rows"]  # = False, usually
     density_estimation = f.attrs["density_estimation"]  # = False, usually
 
-    print(f"M={M} source points, N={N} target points in dimension {D}")
-    print(f"with a signal of dimension E={E}.")
+    print(f"M={M:,} source points, N={N:,} target points in dimension {D:,}")
+    print(f"with a signal of dimension E={E:,}.")
     print(f"kernel='{kernel}'")
     print(f"same_points? {same_points}")
     print(f"normalize_rows? {normalize_rows}")
@@ -74,7 +74,7 @@ def run(*, definition, dataset, runs):
                 true_answer = target_signal
 
             elif _algo.task == "solver":
-                _algo.prepare_data(source_points)
+                _algo.prepare_data(source_points=source_points)
                 query_data = {"target_signal": target_signal}
                 true_answer = source_signal
 
@@ -161,7 +161,8 @@ def run(*, definition, dataset, runs):
                 attrs=attrs,
             )
     finally:
-        algo.done()
+        if algo is not None:
+            algo.done()
 
 
 def run_from_cmdline():

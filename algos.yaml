@@ -151,6 +151,8 @@ bruteforce-product-blas:
   constructor: BruteForceProductBLAS
   run-groups:
     numerical-precision:
+      datasets:
+        - "*" # Match all experiments
       args:
         - { "precision": "float16" }
         - { "precision": "float32" }
@@ -159,12 +161,14 @@ bruteforce-product-blas:
 bruteforce-solver-blas:
   disabled: false
   hardware: CPU
-  product: true
+  solver: true
   docker-tag: kernel-matrix-benchmarks-sklearn
   module: kernel_matrix_benchmarks.algorithms.bruteforce
-  constructor: BruteForceSolverBLAS
+  constructor: BruteForceSolverLAPACK
   run-groups:
     numerical-precision:
+      datasets:
+        - "*" # Match all experiments
       args:
         - { "precision": "float16" }
         - { "precision": "float32" }

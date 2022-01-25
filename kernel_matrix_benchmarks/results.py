@@ -54,6 +54,20 @@ import json
 import os
 import re
 import traceback
+import numpy as np
+
+
+class CustomJSONizer(json.JSONEncoder):
+    def default(self, obj):
+        """Converts numpy's booleans to real booleans.
+        
+        This is necessary, since numpy's booleans are not supported by json.dumps().
+        """
+        return (
+            super().encode(bool(obj))
+            if isinstance(obj, np.bool_)
+            else super().default(obj)
+        )
 
 
 def get_result_filename(
@@ -69,7 +83,10 @@ def get_result_filename(
         # The filename is a "flat" expansion of the dict of parameters,
         # with all "non alphanumerical symbols" replaced by "_".
         d.append(
-            re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".hdf5"
+            re.sub(
+                r"\W+", "_", json.dumps(data, sort_keys=True, cls=CustomJSONizer)
+            ).strip("_")
+            + ".hdf5"
         )
     return os.path.join(*d)
 

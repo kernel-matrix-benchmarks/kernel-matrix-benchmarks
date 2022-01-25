@@ -41,7 +41,7 @@ def instantiate_algorithm(definition):
     )
     module = importlib.import_module(definition.module)
     constructor = getattr(module, definition.constructor)
-    return constructor(*definition.arguments)
+    return constructor(**definition.arguments)
 
 
 class InstantiationStatus(Enum):
@@ -126,8 +126,13 @@ def get_definitions(
 
         # Step 2.c: Loop over the "run groups" that define
         # several ways of using the same python constructor.
-        for run_group in algo["run-groups"].values():
+        for run_group_name, run_group in algo["run-groups"].items():
 
+            if "datasets" not in run_group:
+                raise ValueError(
+                    f'The field "datasets" is missing for run-group'
+                    f' "{run_group_name}" of algo "{name}".'
+                )
             # Step 2.d: Check that the run-group is meant to be used on the dataset
             if not any(
                 fnmatch.fnmatch(dataset, pattern) for pattern in run_group["datasets"]

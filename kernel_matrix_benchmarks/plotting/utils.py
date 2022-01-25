@@ -51,8 +51,8 @@ def create_pointset(*, data, x_name, y_name):
     # Loop over all points in the benchmark:
     # We sweep "from the best values of y to the worst ones".
     for algo, algo_name, xv, yv in data:
-        if not xv or not yv:  # zero values -> skip
-            continue
+        # if not xv or not yv:  # zero values -> skip
+        #    continue
         points["all"]["x"].append(xv)
         points["all"]["y"].append(yv)
         points["all"]["labels"].append(algo_name)
@@ -183,8 +183,7 @@ def compute_all_metrics(dataset, run, properties, recompute=False):
             metrics_cache=metrics_cache,
         )
         results[name] = value
-        if value:
-            print("%s: %g" % (name, value))
+        print("%s: %g" % (name, value))
     return (algo, algo_name, results)
 
 
