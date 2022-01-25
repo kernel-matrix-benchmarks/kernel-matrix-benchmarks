@@ -63,7 +63,7 @@ class BruteForceProductBLAS(BaseProduct):
             raise NotImplementedError(
                 f"BruteForceProductBLAS doesn't support kernel {kernel}."
             )
-        self.name = "BruteForceProductBLAS()"
+        self.name = f"BruteForceProductBLAS({precision})"
 
     def prepare_data(
         self,
@@ -152,7 +152,7 @@ class BruteForceSolverLAPACK(BaseSolver):
             raise NotImplementedError(
                 f"BruteForceSolverLAPACK doesn't support kernel {kernel}."
             )
-        self.name = "BruteForceSolverLAPACK()"
+        self.name = f"BruteForceSolverLAPACK({precision})"
 
     def prepare_data(self, *, source_points):
         """Casts data to the required precision."""

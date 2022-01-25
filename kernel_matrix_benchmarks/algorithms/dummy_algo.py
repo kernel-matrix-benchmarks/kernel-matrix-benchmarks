@@ -7,26 +7,30 @@ class DummyAlgoProduct(BaseProduct):
     """Random algorithm, for testing purposes."""
 
     def __init__(self):
-        self.name = "DummyAlgoProduct"
+        self.name = "DummyAlgoProduct()"
 
-    def fit(self, source_points, source_signal=None):
-        if source_signal is None:
-            self.output_dim = 1
-        else:
-            self.output_dim = source_signal.shape[-1]
+    def prepare_data(self, *, target_points, **kwargs):
+        self.n_points = target_points.shape[0]
 
-    def query(self, target_point):
-        return np.random.randn(self.output_dim)
+    def prepare_query(self, *, source_signal):
+        self.output_dim = source_signal.shape[-1]
+
+    def query(self):
+        self.res = np.random.randn(self.n_points, self.output_dim)
 
 
 class DummyAlgoSolver(BaseSolver):
     """Random algorithm, for testing purposes."""
 
     def __init__(self):
-        self.name = "DummyAlgoSolver"
+        self.name = "DummyAlgoSolver()"
 
-    def fit(self, source_points):
-        pass
+    def prepare_data(self, *, source_points, **kwargs):
+        self.n_points = source_points.shape[0]
 
-    def batch_query(self, target_signal):
-        self.res = np.random.randn(*target_signal.shape)
+    def prepare_query(self, *, target_signal):
+        self.output_dim = target_signal.shape[-1]
+
+    def query(self):
+        self.res = np.random.randn(self.n_points, self.output_dim)
+
