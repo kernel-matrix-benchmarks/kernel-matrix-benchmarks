@@ -17,6 +17,17 @@ A dataset file "f" contains the following attributes and tables:
 - f["target_signal"] = (N,E) float64 array ("a").
     The N signal vectors a_i associated to each point x_i.
 
+- f.attrs["short_description"] = "sphere, inverse-distance (N=1k, D=3)"
+    A short description, to be used as a label in the "results on all datasets
+    per algorithm" performance plots.
+    Defaults to the dataset label in DATASETSS.
+
+- f.attrs["description"] = "product" | "solver" | "attention"
+    The description that will be used as a "link" in the summary page.
+
+- f.attrs["long_description"] = "This dataset..."
+    A long description that will be used in the "details" page of the website.
+
 - f.attrs["task"] = "product" | "solver" | "attention"
     The target task for this dataset.
 
@@ -106,6 +117,8 @@ def get_dataset(which):
         if which in DATASETS:
             print("Creating dataset locally")
             DATASETS[which](hdf5_fn)
+
+    # Load the file. This should be closed explicitly by the user:
     hdf5_f = h5py.File(hdf5_fn, "r")
 
     # Cast to integer because the json parser (later on) cannot interpret numpy integers.
@@ -124,6 +137,9 @@ def write_output(
     filename,
     task,
     kernel,
+    short_description,
+    description,
+    long_description,
     source_points,
     target_points=None,
     source_signal=None,
@@ -140,6 +156,10 @@ def write_output(
         f.attrs["task"] = task
         f.attrs["point_type"] = point_type
         f.attrs["normalize_rows"] = normalize_rows
+        # Descriptions of the dataset:
+        f.attrs["short_description"] = short_description
+        f.attrs["description"] = description
+        f.attrs["long_description"] = long_description
 
         # First data array: source points y_1, ..., y_M:
         f["source_points"] = source_points
@@ -211,6 +231,9 @@ def uniform_sphere(
             filename=filename,
             task=task,
             kernel=kernel,
+            short_description=f"sphere (N={n_points}, D={dimension})",
+            description=f"{task.capitalize()} on the sphere, {kernel} (N={n_points}, D={dimension})",
+            long_description="A toy dataset.",
             source_points=source_points,
             target_points=None,  # == source_points
             source_signal=source_signal,

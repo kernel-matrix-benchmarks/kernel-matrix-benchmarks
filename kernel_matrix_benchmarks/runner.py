@@ -41,6 +41,10 @@ def run(*, definition, dataset, runs):
     normalize_rows = f.attrs["normalize_rows"]  # = False, usually
     density_estimation = f.attrs["density_estimation"]  # = False, usually
 
+    # Don't forget to close the file:
+    f.close()
+
+    # Display some info:
     print(f"M={M:,} source points, N={N:,} target points in dimension {D:,}")
     print(f"with a signal of dimension E={E:,}.")
     print(f"kernel='{kernel}'")

@@ -18,32 +18,34 @@
             interactive plots, including
             approximate precision and pre-computation time.</p>
         
-        {% if len(dataset_with_distances) > 0 %}
 
         <h2 id="datasets">Results by Dataset</h2>
-        {% for distance_data in dataset_with_distances %}
-        <h3>Kernel: {{ distance_data.name }} </h3>
-        {% for entry in distance_data.entries %}
-        <a href="./{{ entry.name }}.html">
-            <div class="row" id="{{entry.name}}">
+        <ul class="list-inline"><b>Datasets:</b>
+            {% for dataset_name, dataset_run in runs["by_dataset"].items() %}
+            <li><a href="#{{dataset_name}}">{{dataset_name}}</a></li>
+            {% endfor %}
+        </ul>
+        {% for dataset_name, dataset_run in runs["by_dataset"].items()%}
+        <a href="./{{ dataset_name }}.html">
+            <div class="row" id="{{dataset_name}}">
                 <div class="col-md-4 bg-success">
-                    <h4>{{entry.desc}}</h4>
+                    <h4>{{dataset_run["title"]}}</h4>
                 </div>
                 <div class="col-md-8">
-                    <img class="img-responsive" src="{{ entry.name }}.png" />
+                    <img class="img-responsive" src="{{ dataset_name }}.png" />
                 </div>
             </div>
         </a>
         <hr />
         {% endfor %}
-        {% endfor %}
+
         <h2 id="algorithms">Results by Algorithm</h2>
         <ul class="list-inline"><b>Algorithms:</b>
-            {% for algo in algorithms.keys() %}
+            {% for algo in runs["by_algorithm"].keys() %}
             <li><a href="#{{algo}}">{{algo}}</a></li>
             {% endfor %}
         </ul>
-        {% for algo in algorithms.keys()%}
+        {% for algo in runs["by_algorithm"].keys()%}
         <a href="./{{ algo }}.html">
             <div class="row" id="{{algo}}">
                 <div class="col-md-4 bg-success">
@@ -56,5 +58,4 @@
         </a>
         <hr />
         {% endfor %}
-        {% endif %}
         {% endblock %}

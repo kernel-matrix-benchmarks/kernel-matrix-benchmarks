@@ -172,6 +172,8 @@ def main():
     kernel = dataset.attrs["kernel"]
     task = dataset.attrs["task"]
     normalize_rows = dataset.attrs.get("normalize_rows", False)
+    # Don't forget to close the HDF5 file:
+    dataset.close()
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml

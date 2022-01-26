@@ -68,22 +68,6 @@ def convert_linestyle(ls):
     return new_ls
 
 
-def get_run_desc(properties):
-    return "%(dataset)s_%(kernel)s" % properties
-
-
-def get_dataset_from_desc(desc):
-    return desc.split("_")[0]
-
-
-def get_kernel_from_desc(desc):
-    return desc.split("_")[1]
-
-
-def get_dataset_label(desc):
-    return "{}".format(get_dataset_from_desc(desc))
-
-
 def directory_path(s):
     if not os.path.isdir(s):
         os.makedirs(s)
@@ -91,10 +75,17 @@ def directory_path(s):
 
 
 def prepare_data(*, data, x_name, y_name):
-    """Change format from (algo, instance, dict) to (algo, instance, x, y)."""
+    """Change format from {"algo": ..., "algo_name": ..., "metrics": dict} to (algo, instance, x, y)."""
     res = []
-    for algo, algo_name, result in data:
-        res.append((algo, algo_name, result[x_name], result[y_name]))
+    for met in data:
+        res.append(
+            (
+                met["algo"],
+                met["algo_name"],
+                met["metrics"][x_name],
+                met["metrics"][y_name],
+            )
+        )
     return res
 
 
@@ -200,24 +191,24 @@ def create_plot(
     )
 
 
-def build_detail_site(*, data, label_func, j2_env, linestyles):
+def build_detail_site(*, full_data, j2_env, linestyles):
     """Builds a detailed interactive page for every algorithm and dataset."""
 
-    for (name, runs) in data.items():
+    for (name, data) in full_data.items():
         print("Building '%s'" % name)
-        all_runs = runs.keys()
-        label = label_func(name)
+        title = data["title"]
         point_data = {"normal": [], "scatter": []}
 
         # Loop over the required pairs of (xaxis, yaxis):
         for plottype in args.plottype:
             # Select the names of the variables on the "x" and "y" axes.
             x_name, y_name = plot_variants[plottype]
-            # Display the Pareto fronts:
 
+            # Javascript rendering of the runs in full_data[name]["runs"]
+            # (Pareto fronts only):
             point_data["normal"].append(
                 create_plot(
-                    data=runs,
+                    data=data["runs"],
                     x_name=x_name,
                     y_name=y_name,
                     linestyle=convert_linestyle(linestyles),
@@ -228,9 +219,11 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
             # This is especially useful when tuning the experiments
             # in algos.yaml.
             if args.scatter:
+                # Javascript rendering of the runs in full_data[name]["runs"]
+                # (all performance points, including the sub-optimal ones):
                 point_data["scatter"].append(
                     create_plot(
-                        data=runs,
+                        data=data["runs"],
                         x_name=x_name,
                         y_name=y_name,
                         linestyle=convert_linestyle(linestyles),
@@ -242,9 +235,9 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
 
         # Create a .png plot for the summary page:
         data_for_plot = {}
-        for k in runs.keys():
+        for k in data["runs"].keys():
             data_for_plot[k] = prepare_data(
-                data=runs[k], x_name="total-time", y_name="rmse-error"
+                data=data["runs"][k], x_name="total-time", y_name="rmse-error"
             )
 
         plot.create_plot(
@@ -263,43 +256,18 @@ def build_detail_site(*, data, label_func, j2_env, linestyles):
         with open(output_path, "w") as text_file:
             text_file.write(
                 j2_env.get_template("detail_page.html").render(
-                    title=label, plot_data=point_data, args=args
+                    title=title, plot_data=point_data, args=args
                 )
             )
 
 
-def build_index_site(datasets, algorithms, j2_env, file_name="index.html"):
+def build_index_site(*, runs, j2_env, file_name="index.html"):
     """Builds the front page of our website (index.html)."""
-
-    dataset_data = []
-
-    # Arbitrary sorting order: first by kernel name...
-    kernels = sorted(set([get_kernel_from_desc(e) for e in datasets.keys()]))
-    # ...then by dataset name:
-    sorted_datasets = sorted(set([get_dataset_from_desc(e) for e in datasets.keys()]))
-
-    for k in kernels:
-        d = {"name": k, "entries": []}
-        for ds in sorted_datasets:
-            # Extract all experiments with the correct info:
-            sorted_matches = [
-                e
-                for e in datasets.keys()
-                if get_dataset_from_desc(e) == ds
-                and get_kernel_from_desc(e) == k  # noqa
-            ]
-            # Add the relevant data to a list in a dict, that will
-            # be matched by a Jinja template:
-            for idd in sorted_matches:
-                d["entries"].append({"name": idd, "desc": get_dataset_label(idd)})
-        dataset_data.append(d)
 
     with open(args.outputdir + file_name, "w") as text_file:
         text_file.write(
             j2_env.get_template("summary.html").render(
-                title="Kernel-Matrix-Benchmarks",
-                dataset_with_distances=dataset_data,
-                algorithms=algorithms,
+                title="Kernel-Matrix-Benchmarks", runs=runs,
             )
         )
 
@@ -307,66 +275,77 @@ def build_index_site(datasets, algorithms, j2_env, file_name="index.html"):
 def load_all_results():
     """Read all result files and compute all metrics.
     
-    Returns two dicts:
-        - all_runs_by_dataset = {
-                "dataset-1_kernel-1": {
-                    "algo-1": [
-                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
-                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+    Returns a dict: all_runs = {
+            "by_dataset" : {
+                "dataset-1": {
+                    "title": "Dataset 1";
+                    "runs": {
+                        "algo-1": [
+                            {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
+                            {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+                            ...
+                        ],
+                        "algo-2": [
+                            ...
+                        ],
                         ...
-                    ],
-                    "algo-2_kernel-2": [
-                        ...
-                    ],
-                    ...
+                    }
                 },
                 "dataset-2": {
                     ...
                 }
-            }
-        - all_runs_by_algorithm = {
+            },
+            "by_algorithm" : {
                 "algo-1": {
-                    "dataset-1 (k = kernel-1)": [
-                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
-                        {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+                    "title": "Algo-1",
+                    "runs": {
+                        "dataset-1": [
+                            {"metric-1": val1, "metric-2": val2, ...},  # Run for params1
+                            {"metric-1": val1, "metric-2": val2, ...},  # Run for params2
+                            ...
+                        ],
+                        "dataset-2": [
+                            ...
+                        ],
                         ...
-                    ],
-                    "dataset-2 (k = kernel-2)": [
-                        ...
-                    ],
-                    ...
+                    }
                 },
                 "algo-2": {
                     ...
                 }
             }
+            }
     """
 
-    all_runs_by_dataset = {}
-    all_runs_by_algorithm = {}
-    cached_true_dist = []
+    all_runs = {"by_dataset": {}, "by_algorithm": {}}
     old_sdn = None
 
     # f is an hdf5 file, properties = dict(f.attrs) contains the relevant metadata:
     for properties, f in results.load_all_results():
         # String identifier for a problem (dataset, kernel, ...):
-        sdn = get_run_desc(properties)  #  "dataset_kernel"
-        # If this is a new problem, we must reload the dataset file:
-        if sdn != old_sdn:
-            dataset, _ = get_dataset(properties["dataset"])
-            old_sdn = sdn
+        dataset_name = properties["dataset"]
+        dataset_file, _ = get_dataset(dataset_name)
 
-        algo_ds = get_dataset_label(sdn)  # "dataset (k = kernel)"
         algo = properties["algo"]
-        ms = compute_all_metrics(dataset, f, properties, args.recompute)
+        ms = compute_all_metrics(
+            dataset=dataset_file, run=f, properties=properties, recompute=args.recompute
+        )
 
-        # TODO: we should separate runs by task (i.e. "product" and "solver")
+        ms["short_description"] = 2
+
         # Put the run in a dict sorted by dataset...
-        all_runs_by_dataset.setdefault(sdn, {}).setdefault(algo, []).append(ms)
+        all_runs["by_dataset"].setdefault(
+            dataset_name, {"title": dataset_file.attrs["description"], "runs": {}}
+        )["runs"].setdefault(algo, []).append(ms)
         # ... and in a dict sorted by method:
-        all_runs_by_algorithm.setdefault(algo, {}).setdefault(algo_ds, []).append(ms)
+        all_runs["by_algorithm"].setdefault(algo, {"title": algo, "runs": {}})[
+            "runs"
+        ].setdefault(dataset_name, []).append(ms)
 
-    return (all_runs_by_dataset, all_runs_by_algorithm)
+        # Don't forget to close the dataset file:
+        dataset_file.close()
+
+    return all_runs
 
 
 # We use the Jinja templating system:
@@ -374,24 +353,19 @@ j2_env = Environment(loader=FileSystemLoader("./templates/"), trim_blocks=True)
 j2_env.globals.update(zip=zip, len=len)
 
 # Load the data:
-runs_by_ds, runs_by_algo = load_all_results()
+runs = load_all_results()
 # Retrieve the names of the datasets - each of whom receives a detailed page:
-dataset_names = [get_dataset_label(x) for x in list(runs_by_ds.keys())]
+dataset_names = list(runs["by_dataset"].keys())
 # Retrieve the names of the algorithms - each of whom receives a detailed page:
-algorithm_names = list(runs_by_algo.keys())
+algorithm_names = list(runs["by_algorithm"].keys())
 
 linestyles = {**create_linestyles(dataset_names), **create_linestyles(algorithm_names)}
-ds_l = lambda label: get_dataset_label(label)
 
 # Detailed pages for datasets:
-build_detail_site(
-    data=runs_by_ds, label_func=ds_l, j2_env=j2_env, linestyles=linestyles
-)
+build_detail_site(full_data=runs["by_dataset"], j2_env=j2_env, linestyles=linestyles)
 
 # Detailed pages for algorithms:
-build_detail_site(
-    data=runs_by_algo, label_func=lambda x: x, j2_env=j2_env, linestyles=linestyles
-)
+build_detail_site(full_data=runs["by_algorithm"], j2_env=j2_env, linestyles=linestyles)
 
 # Index page:
-build_index_site(runs_by_ds, runs_by_algo, j2_env, "index.html")
+build_index_site(runs=runs, j2_env=j2_env, file_name="index.html")

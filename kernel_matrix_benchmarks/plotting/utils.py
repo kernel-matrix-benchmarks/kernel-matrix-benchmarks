@@ -132,7 +132,7 @@ def compute_metrics(*, dataset, results, x_name, y_name, recompute=False):
     return all_results
 
 
-def compute_all_metrics(dataset, run, properties, recompute=False):
+def compute_all_metrics(*, dataset, run, properties, recompute=False):
     """Evaluates all metrics for a given experiment.
 
     Args:
@@ -147,7 +147,11 @@ def compute_all_metrics(dataset, run, properties, recompute=False):
             are already in the attributes of run? Defaults to False.
 
     Returns:
-        (str, str, dict) 3-uple: algo, algo_name and a {metric: value} dict.
+        dict: {
+            "algo": algo tag as in algos.yaml, 
+            "algo_name": attribute algo.name defined in the Python API,
+            "metrics": {metric: value} dict.
+            }
     """
 
     algo = properties["algo"]  # str, as in algos.yaml
@@ -184,7 +188,7 @@ def compute_all_metrics(dataset, run, properties, recompute=False):
         )
         results[name] = value
         print("%s: %g" % (name, value))
-    return (algo, algo_name, results)
+    return {"algo": algo, "algo_name": algo_name, "metrics": results}
 
 
 def generate_n_colors(n):
@@ -258,8 +262,8 @@ def get_left_right(metric):
 
 def get_plot_label(x_metric, y_metric):
     template = (
-        "%(ylabel)s / %(xlabel)s tradeoff - %(updown)s and"
-        " to the %(leftright)s is better"
+        "%(ylabel)s / %(xlabel)s tradeoff -- "
+        "%(updown)s and to the %(leftright)s is better"
     )
     return template % {
         "xlabel": x_metric["description"],

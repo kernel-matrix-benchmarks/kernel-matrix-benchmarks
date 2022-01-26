@@ -31,12 +31,12 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
     # Now generate each plot
     handles = []
     labels = []
-    plt.figure(figsize=(12, 9))
+    plt.figure(figsize=(9, 7), dpi=200)
 
     # Sorting by mean y-value helps aligning plots with labels
     def mean_y(algo):
         points = create_pointset(data=data[algo], x_name=x_name, y_name=y_name)
-        return -np.log(np.array(points["front"]["y"])).mean()
+        return -np.log(np.array(points["front"]["y"]) + 1e-10).mean()
 
     for algo in sorted(data.keys(), key=mean_y):
         points = create_pointset(data=data[algo], x_name=x_name, y_name=y_name)
@@ -160,6 +160,9 @@ if __name__ == "__main__":
         y_name=args.y_axis,
         recompute=args.recompute,
     )
+    # Don't forget to close the file:
+    dataset.close()
+
     if not runs:
         raise Exception("Nothing to plot")
 
