@@ -31,6 +31,17 @@
                             },
                             scales: {
                                 xAxes: [{
+                                    ticks: {
+                                    autoSkip: true,
+                                    //needed to change the scientific notation results from using logarithmic scale
+                                    callback: function(value, index, values) {
+                                    //pass tick values as a string into Number function
+                                        let sci = Number(value.toString()).toExponential(0);
+                                        if(["1"].includes(sci[0])) {
+                                            return "10^"+sci.slice(2);
+                                        }
+                                    }
+                                    },
                                     display: true,
                                     type: 'logarithmic',
                                     position: 'bottom',
@@ -40,6 +51,17 @@
                                     }
                                 }],
                                 yAxes: [{
+                                    ticks: {
+                                    autoSkip: true,
+                                    //needed to change the scientific notation results from using logarithmic scale
+                                    callback: function(value, index, values) {
+                                    //pass tick values as a string into Number function
+                                        let sci = Number(value.toString()).toExponential(0);
+                                        if(["1"].includes(sci[0])) {
+                                            return "10^"+sci.slice(2);
+                                        }
+                                    }
+                                    },
                                     display: true,
                                     type: 'logarithmic',
                                     scaleLabel: {

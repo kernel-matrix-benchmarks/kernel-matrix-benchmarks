@@ -10,6 +10,8 @@ from kernel_matrix_benchmarks.datasets import get_dataset
 from kernel_matrix_benchmarks.definitions import get_definitions
 from kernel_matrix_benchmarks.plotting.metrics import all_metrics as metrics
 from kernel_matrix_benchmarks.plotting.utils import (
+    get_up_down,
+    get_left_right,
     get_plot_label,
     compute_metrics,
     create_linestyles,
@@ -77,8 +79,17 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
     ax.set_title(get_plot_label(x_metric, y_metric))
     box = plt.gca().get_position()
     # plt.gca().set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    #  Place the legend "in the least important part of the figure":
+    legend_location = (
+        {"down": "upper", "up": "lower"}[get_up_down(y_metric)]
+        + " "
+        + {"left": "right", "right": "left"}[get_left_right(x_metric)]
+    )
     ax.legend(
-        handles, labels, loc="center left", bbox_to_anchor=(1, 0.5), prop={"size": 9}
+        handles,
+        labels,
+        loc=legend_location,
+        prop={"size": 9},  # bbox_to_anchor=(1, 0.5)
     )
     plt.grid(b=True, which="major", color="0.65", linestyle="-")
     plt.setp(ax.get_xminorticklabels(), visible=True)
