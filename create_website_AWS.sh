@@ -31,7 +31,7 @@ python3 run.py --dataset solver-sphere-D3-E1-M1000-N1000-inverse-distance
 # python3 run.py --dataset glove-200-angular
 
 # Create the website and compress it in a zip file:
-sudo python3 create_website.py --outputdir website
+sudo python3 create_website.py --latex --scatter --outputdir website
 zip -r website.zip website
 
 # Then, just download the website by running

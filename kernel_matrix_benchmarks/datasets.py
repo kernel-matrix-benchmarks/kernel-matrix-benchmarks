@@ -333,13 +333,26 @@ def fashion_mnist(out_fn):
 
 # Full list of supported datasets ----------------------------------------------
 
+# Kernel product on the 3D sphere:
+PRODUCT_SPHERE = {
+    "product-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
+        n_points=n, dimension=3, radius=1, task="product", kernel="inverse-distance"
+    )
+    for n in [1000, 2000, 5000, 10000]
+}
+
+# Kernel solver on the 3D sphere:
+SOLVER_SPHERE = {
+    "solver-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
+        n_points=n, dimension=3, radius=1, task="solver", kernel="inverse-distance"
+    )
+    for n in [1000, 2000, 5000, 10000]
+}
+
+
 DATASETS = {
-    "product-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
-        n_points=1000, dimension=3, radius=1, task="product", kernel="inverse-distance"
-    ),
-    "solver-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
-        n_points=1000, dimension=3, radius=1, task="solver", kernel="inverse-distance"
-    ),
+    **PRODUCT_SPHERE,
+    **SOLVER_SPHERE,
     # "mnist-784-euclidean": mnist,
     # "fashion-mnist-784-euclidean": fashion_mnist,
     # "glove-25-angular": lambda out_fn: glove(out_fn, 25),
