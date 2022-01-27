@@ -90,7 +90,7 @@ def get_unique_algorithms(definition_file):
 def get_definitions(
     definition_file="algos.yaml",
     dimension=3,
-    dataset="product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance",
+    dataset="product-sphere-D3-E1-M1000-N1000-inverse-distance",
     task="product",
     hardware="CPU",
     kernel="gaussian",

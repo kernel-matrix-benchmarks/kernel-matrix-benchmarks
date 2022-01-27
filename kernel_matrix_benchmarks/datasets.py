@@ -25,9 +25,6 @@ A dataset file "f" contains the following attributes and tables:
 - f.attrs["description"] = "product" | "solver" | "attention"
     The description that will be used as a "link" in the summary page.
 
-- f.attrs["long_description"] = "This dataset..."
-    A long description that will be used in the "details" page of the website.
-
 - f.attrs["task"] = "product" | "solver" | "attention"
     The target task for this dataset.
 
@@ -139,7 +136,6 @@ def write_output(
     kernel,
     short_description,
     description,
-    long_description,
     source_points,
     target_points=None,
     source_signal=None,
@@ -159,7 +155,6 @@ def write_output(
         # Descriptions of the dataset:
         f.attrs["short_description"] = short_description
         f.attrs["description"] = description
-        f.attrs["long_description"] = long_description
 
         # First data array: source points y_1, ..., y_M:
         f["source_points"] = source_points
@@ -233,7 +228,6 @@ def uniform_sphere(
             kernel=kernel,
             short_description=f"sphere (N={n_points}, D={dimension})",
             description=f"{task.capitalize()} on the sphere, {kernel} (N={n_points}, D={dimension})",
-            long_description="A toy dataset.",
             source_points=source_points,
             target_points=None,  # == source_points
             source_signal=source_signal,
@@ -340,10 +334,10 @@ def fashion_mnist(out_fn):
 # Full list of supported datasets ----------------------------------------------
 
 DATASETS = {
-    "product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
+    "product-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
         n_points=1000, dimension=3, radius=1, task="product", kernel="inverse-distance"
     ),
-    "solver-uniform-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
+    "solver-sphere-D3-E1-M1000-N1000-inverse-distance": uniform_sphere(
         n_points=1000, dimension=3, radius=1, task="solver", kernel="inverse-distance"
     ),
     # "mnist-784-euclidean": mnist,

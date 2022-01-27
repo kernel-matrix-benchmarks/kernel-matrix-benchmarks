@@ -1,6 +1,6 @@
 {% extends "general.html" %}
 {% block content %}
-        <div class="container">
+        <div class="container-fluid">
             <h2>{{title}}</h2>
 
 
@@ -26,11 +26,9 @@
             {% endif %}
         <div class="row">
             {% for plot in plot_data[item] %}
-                <div class="col-md-4" id="{{item}}-{{algo}}">
+                <div class="col-md-4" id="{{ item }}{{ plot['tag'] }}">
                     <h4 class="text-center">{{ plot["label"] }}</h4>
-                    <div id="{{ item }}{{ plot['tag'] }}">
                     {{ plot["chart"] }}
-                    </div>
                 </div>
             {% if loop.cycle(false, false, true) %}
             </div>

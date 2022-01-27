@@ -69,7 +69,7 @@ nicealgorithm:
 
     two-runs:
       datasets:
-        - "*-uniform-sphere-*-inverse-distance"
+        - "*-sphere-*-inverse-distance"
       args:
         - { "K": 10, "tol": 0.01 }
         - { "K": 50, "tol": 0.001 }

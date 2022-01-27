@@ -82,7 +82,7 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="product-uniform-sphere-D3-E1-M1000-N1000-inverse-distance",
+        default="product-sphere-D3-E1-M1000-N1000-inverse-distance",
         choices=DATASETS.keys(),
     )
     parser.add_argument(
