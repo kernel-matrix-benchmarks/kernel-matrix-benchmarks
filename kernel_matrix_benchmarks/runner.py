@@ -11,188 +11,100 @@ import docker
 import numpy
 import psutil
 
-from kernel_matrix_benchmarks.algorithms.definitions import (
+from kernel_matrix_benchmarks.definitions import (
     Definition,
     instantiate_algorithm,
 )
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
-from kernel_matrix_benchmarks.distance import metrics, dataset_transform
-from kernel_matrix_benchmarks.results import store_results
+from kernel_matrix_benchmarks.results import store_result
 
 
-def run_individual_query(algo, X_train, X_test, distance, count, run_count, batch):
-    """Performs an actual computation to benchmark!"""
+def run(*, definition, dataset, runs):
+    """Runs a method "runs" times."""
 
-    # To ensure a fair benchmark, we may need to reformat queries
-    # before launching the timer, e.g. to load them on the GPU or change the input format:
-    prepared_queries = (batch and hasattr(algo, "prepare_batch_query")) or (
-        (not batch) and hasattr(algo, "prepare_query")
+    # Load the input data from the HDF5 file:
+    f, _ = get_dataset(dataset)
+    # N.B.: - The specification of our dataset format is detailed in datasets.py.
+    #       - The f["key"][:] syntax forces the conversion of the data
+    #         to a NumPy array, loaded in RAM.
+    source_points = f["source_points"][:]  # (M,D) float64 array
+    target_points = f["target_points"][:]  # (N,D) float64 array
+    source_signal = f["source_signal"][:]  # (M,E) float64 array
+    target_signal = f["target_signal"][:]  # (N,E) float64 array
+    M, D = source_points.shape
+    N, E = target_signal.shape
+
+    # Metadata:
+    point_type = f.attrs["point_type"]  # = "float", usually
+    kernel = f.attrs["kernel"]  # = "gaussian", "inverse-distance", etc.
+    same_points = f.attrs["same_points"]  # = True if source_points = target_points
+    normalize_rows = f.attrs["normalize_rows"]  # = False, usually
+    density_estimation = f.attrs["density_estimation"]  # = False, usually
+
+    # Don't forget to close the file:
+    f.close()
+
+    # Display some info:
+    print("")
+    print("========================================")
+    print(
+        f"M={M:,} source points, N={N:,} target points in dimension {D:,} "
+        f"with a signal of dimension E={E:,}."
     )
-
-    # We try an experiment "run_count" times and keep the best run time:
-    best_search_time = float("inf")
-    for i in range(run_count):
-        print("Run %d/%d..." % (i + 1, run_count))
-        # a bit dumb but can't be a scalar since of Python's scoping rules
-        n_items_processed = [0]
-
-        def single_query(v):
-            """Performs the computation, one query point at a time."""
-            if prepared_queries:
-                # Load queries on the GPU, etc.
-                algo.prepare_query(v, count)
-
-                # Actual benchmark!
-                start = time.time()
-                algo.run_prepared_query()
-                total = time.time() - start
-
-                # Retrieve the output as a NumPy array.
-                # The algorithm may unload the output form the GPU, etc.:
-                candidates = algo.get_prepared_query_results()
-            else:
-                # For simple NumPy-compatible algorithms,
-                # there is no need to pre- and post-process the queries
-                # outside of the timer "to ensure a fair comparison".
-                start = time.time()
-                candidates = algo.query(v, count)
-                total = time.time() - start
-
-            # Compute the distance between each query point and each possible output:
-            # !!! This is obsolete for kernel matrix benchmarks.
-            candidates = [
-                (
-                    int(idx),
-                    float(metrics[distance]["distance"](v, X_train[idx])),
-                )  # noqa
-                for idx in candidates
-            ]
-            n_items_processed[0] += 1
-            if n_items_processed[0] % 1000 == 0:
-                print(
-                    "Processed %d/%d queries..." % (n_items_processed[0], len(X_test))
-                )
-
-            # !!! count-related code is obsolete
-            if len(candidates) > count:
-                print(
-                    "warning: algorithm %s returned %d results, but count"
-                    " is only %d)" % (algo, len(candidates), count)
-                )
-            return (total, candidates)
-
-        def batch_query(X):
-            """Performs the computation with all queries "simultaneously"."""
-
-            if prepared_queries:
-                # Load queries on the GPU, etc.
-                # !!! count-related code is obsolete
-                algo.prepare_batch_query(X, count)
-
-                # Actual benchmark!
-                start = time.time()
-                algo.run_batch_query()
-                total = time.time() - start
-            else:
-                start = time.time()
-                # !!! count-related code is obsolete
-                algo.batch_query(X, count)
-                total = time.time() - start
-
-            # Unload the output from the GPU, etc.
-            results = algo.get_batch_results()
-
-            # Compute the distance between each query point and each possible output:
-            # !!! This is obsolete for kernel matrix benchmarks.
-            candidates = [
-                [
-                    (
-                        int(idx),
-                        float(metrics[distance]["distance"](v, X_train[idx])),
-                    )  # noqa
-                    for idx in single_results
-                ]
-                for v, single_results in zip(X, results)
-            ]
-            # Each query of the batch "receives" a fraction of the total
-            # compute time:
-            return [(total / float(len(X)), v) for v in candidates]
-
-        if batch:
-            results = batch_query(X_test)
-        else:
-            results = [single_query(x) for x in X_test]
-
-        # We are interested in the "minimum average search time" on the dataset:
-        total_time = sum(time for time, _ in results)
-        search_time = total_time / len(X_test)
-        best_search_time = min(best_search_time, search_time)
-
-        # !!! This is probably obsolete:
-        total_candidates = sum(len(candidates) for _, candidates in results)
-        avg_candidates = total_candidates / len(X_test)
-
-    # Return all types of metadata (attrs) and a list of
-    # [(time1, out1), ..., (timeN, outN)] for the N query points:
-    verbose = hasattr(algo, "query_verbose")
-    attrs = {
-        "batch_mode": batch,
-        "best_search_time": best_search_time,
-        "candidates": avg_candidates,
-        "expect_extra": verbose,
-        "name": str(algo),
-        "run_count": run_count,
-        "distance": distance,
-        "count": int(count),  # !!! obsolete
-    }
-    additional = algo.get_additional()
-    for k in additional:
-        attrs[k] = additional[k]
-    return (attrs, results)
-
-
-def run(definition, dataset, count, run_count, batch):
-    """Runs a method "run_count" times."""
-
-    algo = instantiate_algorithm(definition)
-
-    # Does the algorithm support setting custom arguments for queries?
-    assert not definition.query_argument_groups or hasattr(
-        algo, "set_query_arguments"
-    ), """\
-error: query argument groups have been specified for %s.%s(%s), but the \
-algorithm instantiated from it does not implement the set_query_arguments \
-function""" % (
-        definition.module,
-        definition.constructor,
-        definition.arguments,
+    print(f"kernel='{kernel}'")
+    print(
+        f"same_points? {same_points}, "
+        f"normalize_rows? {normalize_rows}, "
+        f"density_estimation? {density_estimation}."
     )
-
-    # Load the input data:
-    D, dimension = get_dataset(dataset)
-    X_train = numpy.array(D["train"])
-    X_test = numpy.array(D["test"])
-    distance = D.attrs["distance"]
-    print("got a train set of size (%d * %d)" % (X_train.shape[0], dimension))
-    print("got %d queries" % len(X_test))
-
-    # Dense or sparse NumPy arrays:
-    X_train, X_test = dataset_transform(D)
 
     # We run our algorithm in a try-catch structure:
     try:
-        prepared_queries = False
-        if hasattr(algo, "supports_prepared_queries"):
-            prepared_queries = algo.supports_prepared_queries()
 
-        # Step 1: Pre-computation, benchmarked both for time and memory usage.
-        t0 = time.time()
-        memory_usage_before = algo.get_memory_usage()
-        algo.fit(X_train)
-        build_time = time.time() - t0
-        index_size = algo.get_memory_usage() - memory_usage_before
-        print("Built index in", build_time)
-        print("Index size: ", index_size)
+        # We try an experiment "runs" times and keep the best run time:
+        algo = None
+        build_time = float("inf")
+        mem_footprint = float("inf")
+
+        for i in range(runs):
+
+            # Step 0: instantiate the algorithm
+            _algo = instantiate_algorithm(definition)
+
+            # Step 1: Pre-computation, benchmarked both for time and memory usage.
+            # Step 1.a: Load data, outside of the timer
+            if _algo.task == "product":
+                _algo.prepare_data(
+                    source_points=source_points,
+                    target_points=target_points,
+                    same_points=same_points,
+                    density_estimation=density_estimation,
+                )
+                query_data = {"source_signal": source_signal}
+                true_answer = target_signal
+
+            elif _algo.task == "solver":
+                _algo.prepare_data(source_points=source_points)
+                query_data = {"target_signal": target_signal}
+                true_answer = source_signal
+
+            else:
+                raise NotImplementedError()
+
+            #  Step 1.b: Actual pre-computation, within the timer
+            memory_usage_before = _algo.get_memory_usage()
+            t0 = time.time()
+            _algo.fit()
+            _build_time = time.time() - t0
+            _mem_footprint = _algo.get_memory_usage() - memory_usage_before
+
+            if _build_time <= build_time:
+                algo = _algo
+                build_time = _build_time
+                mem_footprint = _mem_footprint
+
+        print(f"Precomputation done in {build_time:.2e}s.")
+        print(f"Memory usage: {mem_footprint:.2e}kB.")
 
         # Step 2: We may run the same "trained" algorithm with different parameters
         # "at query" time.
@@ -200,31 +112,67 @@ function""" % (
         # Make sure that algorithms with no query argument groups still get run
         # once by providing them with a single, empty, harmless group
         if not query_argument_groups:
-            query_argument_groups = [[]]
+            query_argument_groups = [{}]
 
         for pos, query_arguments in enumerate(query_argument_groups, 1):
             print(
                 "Running query argument group %d of %d..."
                 % (pos, len(query_argument_groups))
             )
-            if query_arguments:  # ...is not empty:
-                algo.set_query_arguments(*query_arguments)
+            algo.set_query_arguments(**query_arguments)
 
-            # Benchmark the computation "for X_test and X_train":
-            descriptor, results = run_individual_query(
-                algo, X_train, X_test, distance, count, run_count, batch
+            # Step 3: Actual query ---------------------------------------------
+            # We try an experiment "runs" times and keep the best run time:
+            query_time = float("inf")
+            result = None
+
+            for i in range(runs):
+                print("Run %d/%d..." % (i + 1, runs))
+
+                # To ensure a fair benchmark, we may need to reformat queries
+                # before launching the timer, e.g. to load them on the GPU or change the input format:
+                algo.prepare_query(**query_data)
+
+                # Actual benchmark!
+                start = time.time()
+                algo.query()
+                _query_time = time.time() - start
+
+                # Unload the output from the GPU, etc.
+                _result = algo.get_result()
+
+                # We are interested in the "minimum query time" among all runs:
+                if _query_time <= query_time:
+                    query_time = _query_time
+                    result = _result
+
+            # Return all types of metadata (attrs) and the results array:
+            attrs = dict(
+                {
+                    "dataset": dataset,
+                    "algo": definition.algorithm,
+                    "name": str(algo),
+                    "kernel": kernel,
+                    "run_count": runs,
+                    "build_time": build_time,
+                    "query_time": query_time,
+                    "memory_footprint": mem_footprint,
+                },
+                **algo.get_additional(),
             )
-            descriptor["build_time"] = build_time
-            descriptor["index_size"] = index_size
-            descriptor["algo"] = definition.algorithm
-            descriptor["dataset"] = dataset
 
             # Store the raw output of the algorithm.
-            store_results(
-                dataset, count, definition, query_arguments, descriptor, results, batch
+            store_result(
+                dataset=dataset,
+                definition=definition,
+                query_arguments=query_arguments,
+                result=result,
+                error=result - true_answer,
+                attrs=attrs,
             )
     finally:
-        algo.done()
+        if algo is not None:
+            algo.done()
 
 
 def run_from_cmdline():
@@ -248,19 +196,13 @@ def run_from_cmdline():
     )
     parser.add_argument(
         "--module",
-        help='Python module containing algorithm. E.g. "kernel_matrix_benchmarks.algorithms.annoy"',
+        help='Python module containing algorithm. E.g. "kernel_matrix_benchmarks.algorithms.bruteforce"',
         required=True,
     )
     parser.add_argument(
         "--constructor",
-        help='Constructer to load from modulel. E.g. "Annoy"',
+        help='Constructer to load from module. E.g. "BruteForceProductBLAS"',
         required=True,
-    )
-    parser.add_argument(  #  !!! This is obsolete
-        "--count",
-        help="K: Number of nearest neighbours for the algorithm to return.",
-        required=True,
-        type=int,
     )
     parser.add_argument(
         "--runs",
@@ -269,19 +211,14 @@ def run_from_cmdline():
         type=int,
     )
     parser.add_argument(
-        "--batch",
-        help='If flag included, algorithms will be run in batch mode, rather than "individual query" mode.',
-        action="store_true",
-    )
-    parser.add_argument(
         "build",
-        help='JSON of arguments to pass to the constructor. E.g. ["angular", 100]',
+        help='JSON of arguments to pass to the constructor. E.g. {"precision": "float32"}',
     )
     parser.add_argument(
         "queries",
-        help="JSON of arguments to pass to the queries. E.g. [100]",
+        help='JSON of a list of arguments to pass prior to the queries. E.g. [{"H": 5}, {"H":10}]',
         nargs="*",
-        default=[],
+        default=[{}],
     )
     args = parser.parse_args()
     algo_args = json.loads(args.build)
@@ -295,16 +232,13 @@ def run_from_cmdline():
         constructor=args.constructor,
         arguments=algo_args,
         query_argument_groups=query_args,
-        disabled=False,
     )
 
     # Presumably, we execute this command inside a Docker:
-    run(definition, args.dataset, args.count, args.runs, args.batch)
+    run(definition=definition, dataset=args.dataset, runs=args.runs)
 
 
-def run_docker(
-    definition, dataset, count, runs, timeout, batch, cpu_limit, mem_limit=None
-):
+def run_docker(*, definition, dataset, runs, timeout, cpu_limit, mem_limit=None):
     # Arguments for the entry point defined in "install/Dockerfile",
     # the parent Docker image for all our models:
     # `python3 -u run_algorithm.py` + the options below
@@ -320,13 +254,7 @@ def run_docker(
         definition.constructor,
         "--runs",
         str(runs),
-        "--count",  #  !!! count is obsolete
-        str(count),
     ]
-
-    # "batch mode" will be set to true most of the time:
-    if batch:
-        cmd += ["--batch"]
 
     # Arguments of the "constructor":
     cmd.append(json.dumps(definition.arguments))
@@ -372,7 +300,7 @@ def run_docker(
     t = threading.Thread(target=stream_logs, daemon=True)
     t.start()
 
-    # Launch the container, wait at most timeout seconds (2 hours by default):
+    # Launch the container, wait at most timeout seconds (2 * 10mn by default):
     try:
         return_value = container.wait(timeout=timeout)
         _handle_container_return_value(return_value, container, logger)

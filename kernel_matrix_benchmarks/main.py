@@ -13,8 +13,7 @@ import sys
 import traceback
 
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
-from kernel_matrix_benchmarks.constants import INDEX_DIR
-from kernel_matrix_benchmarks.algorithms.definitions import (
+from kernel_matrix_benchmarks.definitions import (
     get_definitions,
     list_algorithms,
     algorithm_status,
@@ -54,27 +53,21 @@ def run_worker(cpu, args, queue):
         if args.local:
             # Case 1: the user does not want to bother with Docker,
             #    e.g. when writing and testing a pull request on a local machine.
-            run(definition, args.dataset, args.count, args.runs, args.batch)
+            run(definition=definition, dataset=args.dataset, runs=args.runs)
 
         else:
             # Case 2: the user is using Docker, e.g. when rendering the website.
             memory_margin = 500e6  # reserve some extra memory (~500 Mb) for misc stuff
-            mem_limit = int(
-                (psutil.virtual_memory().available - memory_margin) / args.parallelism
-            )
-            cpu_limit = str(cpu)
-            if args.batch:
-                cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
-
+            mem_limit = int((psutil.virtual_memory().available - memory_margin))
+            #  Use all available CPUs:
+            cpu_limit = "0-%d" % (multiprocessing.cpu_count() - 1)
             run_docker(
-                definition,
-                args.dataset,
-                args.count,
-                args.runs,
-                args.timeout,
-                args.batch,
-                cpu_limit,
-                mem_limit,
+                definition=definition,
+                dataset=args.dataset,
+                runs=args.runs,
+                timeout=args.timeout,
+                cpu_limit=cpu_limit,
+                mem_limit=mem_limit,
             )
 
 
@@ -89,15 +82,15 @@ def main():
         "--dataset",
         metavar="NAME",
         help="the dataset to load training points from",
-        default="glove-25-angular",
+        default="product-sphere-D3-E1-M1000-N1000-inverse-distance",
         choices=DATASETS.keys(),
     )
-    parser.add_argument(  # !!! We should remove this argument !!!
-        "-k",
-        "--count",
-        default=10,
-        type=positive_int,
-        help="the number of near neighbours to search for",
+    parser.add_argument(
+        "--hardware",
+        metavar="INSTANCE",
+        help="the type of instance that is currently running the script",
+        default="CPU",
+        choices=["CPU", "GPU"],
     )
     parser.add_argument(
         "--definitions",
@@ -129,26 +122,23 @@ def main():
         metavar="COUNT",
         type=positive_int,
         help="run each algorithm instance %(metavar)s times and use only"
-        " the best result",
-        default=1,
+        " the best result. This is especially useful for methods that rely on"
+        " just-in-time compiling: the first run includes compiling times"
+        " whereas the second doesn't.",
+        default=2,
     )
     parser.add_argument(
         "--timeout",
         type=int,
         help="Timeout (in seconds) for each individual algorithm run, or -1"
         "if no timeout should be set",
-        default=2 * 3600,
+        default=2 * 600,  # Max 10mn per run to keep costs manageable.
     )
     parser.add_argument(
         "--local",
         action="store_true",
         help="If set, then will run everything locally (inside the same "
         "process) rather than using Docker",
-    )
-    parser.add_argument(  # !!! We could remove this argument !!!
-        "--batch",
-        action="store_true",
-        help="If set, algorithms get all queries at once",
     )
     parser.add_argument(
         "--max-n-algorithms",
@@ -160,12 +150,6 @@ def main():
         "--run-disabled",
         help="run algorithms that are disabled in algos.yml",
         action="store_true",
-    )
-    parser.add_argument(
-        "--parallelism",
-        type=positive_int,
-        help="Number of Docker containers in parallel",
-        default=1,
     )
 
     args = parser.parse_args()
@@ -181,22 +165,27 @@ def main():
     logging.config.fileConfig("logging.conf")
     logger = logging.getLogger("kmb")
 
-    # Nmslib specific code
-    # Remove old indices stored on disk
-    if os.path.exists(INDEX_DIR):
-        shutil.rmtree(INDEX_DIR)
-
     # Load the dataset:
     dataset, dimension = get_dataset(args.dataset)
 
     # Properties of the dataset:
-    point_type = dataset.attrs.get("point_type", "float")  # "float", "binary", etc.?
-    distance = dataset.attrs["distance"]  # !!! we will replace this with kernel ???
+    kernel = dataset.attrs["kernel"]
+    task = dataset.attrs["task"]
+    normalize_rows = dataset.attrs.get("normalize_rows", False)
+    # Don't forget to close the HDF5 file:
+    dataset.close()
 
     # Definition of the input problem.
     # These correspond to the experiments listed in algos.yaml
     definitions = get_definitions(
-        args.definitions, dimension, point_type, distance, args.count
+        definition_file=args.definitions,
+        dimension=dimension,
+        dataset=args.dataset,
+        task=task,
+        hardware=args.hardware,
+        kernel=kernel,
+        normalize_rows=normalize_rows,
+        run_disabled=args.run_disabled,
     )
 
     # Filter out, from the loaded definitions, all those query argument groups
@@ -206,10 +195,7 @@ def main():
     filtered_definitions = []
     for definition in definitions:
 
-        # N.B.: Most experiments do not define a "query-arg-groups".
-        query_argument_groups = definition.query_argument_groups
-        if not query_argument_groups:
-            query_argument_groups = [[]]
+        query_argument_groups = definition.query_argument_groups  # = [{}] in most cases
 
         # Filter out, for this specific "definition" (i.e. Python object + parameters)
         # what are the arguments "at query time" that have already been tried.
@@ -217,9 +203,7 @@ def main():
         for query_arguments in query_argument_groups:
             # The result filename looks like
             # "results/dataset/algorithm/M_4_L_0_5.hdf5"
-            fn = get_result_filename(
-                args.dataset, args.count, definition, query_arguments, args.batch
-            )
+            fn = get_result_filename(args.dataset, definition, query_arguments)
             if args.force or not os.path.exists(fn):
                 not_yet_run.append(query_arguments)
 
@@ -302,14 +286,6 @@ def main():
         # Keep the modules that can be loaded:
         definitions = [d for d in definitions if _test(d)]
 
-    # Discard the methods with flag "disabled: false"
-    if not args.run_disabled:
-        if len([d for d in definitions if d.disabled]):
-            logger.info(
-                f"Not running disabled algorithms {[d for d in definitions if d.disabled]}"
-            )
-        definitions = [d for d in definitions if not d.disabled]
-
     #  For debugging, the user may wish to only run the first "n" methods:
     if args.max_n_algorithms >= 0:
         definitions = definitions[: args.max_n_algorithms]
@@ -319,28 +295,14 @@ def main():
     else:
         logger.info(f"Order: {definitions}")
 
-    # args.parallelism specifies the number of tests that we may run in parallel,
-    # in single-thread mode.
-    # In practice, I don't think that this will be used by default.
-    if args.parallelism > multiprocessing.cpu_count() - 1:
-        raise Exception(
-            "Parallelism larger than %d! (CPU count minus one)"
-            % (multiprocessing.cpu_count() - 1)
-        )
-
     # Multiprocessing magic to farm this out to all CPUs
     queue = multiprocessing.Queue()
     for definition in definitions:
         queue.put(definition)
 
-    # Note that args.batch will be true most of the time:
-    if args.batch and args.parallelism > 1:
-        raise Exception(
-            f"Batch mode uses all available CPU resources, --parallelism should be set to 1. (Was: {args.parallelism})"
-        )
     workers = [
         multiprocessing.Process(target=run_worker, args=(i + 1, args, queue))
-        for i in range(args.parallelism)
+        for i in range(1)
     ]
     [worker.start() for worker in workers]
     [worker.join() for worker in workers]

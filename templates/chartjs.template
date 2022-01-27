@@ -1,5 +1,5 @@
-            <h3>{{xlabel}}/{{ylabel}}</h3>
-            <div id="{{ xlabel }}{{ ylabel }}{{ label }}">
+            
+            <div>
             <canvas id="chart{{ xlabel }}{{ ylabel }}{{ label }}" width="800" height="600"></canvas>
             <script>
                 var ctx = document.getElementById("chart{{ xlabel }}{{ ylabel }}{{ label }}");
@@ -25,16 +25,27 @@
                         {% endfor %}
                         ]},
                         options: {
-                            responsive: false,
+                            responsive: true,
+                            maintainAspectRatio: true, 
                             title:{
                                 display:true,
                                 text: '{{ plot_label }}'
                             },
                             scales: {
                                 xAxes: [{
+                                    ticks: {
+                                    autoSkip: true,
+                                    //needed to change the scientific notation results from using logarithmic scale
+                                    callback: function(value, index, values) {
+                                    //pass tick values as a string into Number function
+                                        let sci = Number(value.toString()).toExponential(0);
+                                        if(["1"].includes(sci[0])) {
+                                            return "10^"+sci.slice(2);
+                                        }
+                                    }
+                                    },
                                     display: true,
-                                    type: 'linear',
-                                    max: '1',
+                                    type: 'logarithmic',
                                     position: 'bottom',
                                     scaleLabel: {
                                         display: true,
@@ -42,6 +53,17 @@
                                     }
                                 }],
                                 yAxes: [{
+                                    ticks: {
+                                    autoSkip: true,
+                                    //needed to change the scientific notation results from using logarithmic scale
+                                    callback: function(value, index, values) {
+                                    //pass tick values as a string into Number function
+                                        let sci = Number(value.toString()).toExponential(0);
+                                        if(["1"].includes(sci[0])) {
+                                            return "10^"+sci.slice(2);
+                                        }
+                                    }
+                                    },
                                     display: true,
                                     type: 'logarithmic',
                                     scaleLabel: {
@@ -86,7 +108,7 @@
             {% if args.latex %}
                 <div class="row">
                     <div class="col-md-4 text-center">
-                        <button type="button" id="button_{{button_label}}" class="btn btn-default" >Toggle latex code</button>
+                        <button type="button" id="button_{{button_label}}" class="btn btn-default" >Show latex code</button>
                     </div>
                 </div>
                 <script>

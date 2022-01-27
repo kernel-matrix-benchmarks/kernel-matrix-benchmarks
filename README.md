@@ -111,19 +111,11 @@ All data sets are pre-split into train/test and come with ground truth data. We 
 ## Results
 
 Full interactive plots can be found at <http://kernel-matrix-benchmarks.com>.
-The main performance graphs are summarized below, with one figure per dataset:
+The main performance graphs are summarized below:
 
-### fashion-mnist-784-euclidean
+### Scaling up kernel products on the sphere
 
-![fashion-mnist-784-euclidean](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/fashion-mnist-784-euclidean.png)
-
-### glove-25-angular
-
-![glove-25-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-25-angular.png)
-
-### glove-100-angular
-
-![glove-100-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-100-angular.png)
+...
 
 ## Run the benchmarks
 
@@ -154,8 +146,9 @@ Then:
 You can customize the algorithms and datasets if you want to:
 
 - Check that [algos.yaml](algos.yaml) contains the parameter settings that you want to test
-- To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
-- To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
+- To run experiments on Glove embeddings in dimension 100, invoke `python run.py --local --dataset product-sphere-D3-E1-M1000-N1000-inverse-distance`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
+- To process the results, either use `python plot.py --dataset product-sphere-D3-E1-M1000-N1000-inverse-distance` or `python create_website.py`. An example call: `python create_website.py --latex --scatter --outputdir website/`.
+- Look at the [create_website_local.sh](create_website_local.sh) and [create_website_AWS.sh](create_website_AWS.sh) scripts for other examples.
 
 ### On the Amazon cloud
 
@@ -226,15 +219,16 @@ Once you are done with your instance,
 
 ## Main files
 
-- [algos.yaml](algos.yaml): lists all supported methods and parameter values.
 - [install.py](install.py): builds the Docker images from [install/](install/).
+- [algos.yaml](algos.yaml): lists all supported methods and parameter values.
 - [kernel_matrix_benchmarks/](kernel_matrix_benchmarks/):
+  - [definitions.py](kernel_matrix_benchmarks/definitions.py): parser for [algos.yaml](algos.yaml).
   - [datasets.py](kernel_matrix_benchmarks/datasets.py): supported datasets.
   - [main.py](kernel_matrix_benchmarks/main.py): runs all supported experiments on a given dataset.
   - [runner.py](kernel_matrix_benchmarks/runner.py): runs a specific experiment and saves results in a HDF5 file.
   - [algorithms/](kernel_matrix_benchmarks/algorithms/):
-    - [definitions.py](kernel_matrix_benchmarks/algorithms/definitions.py): parser for [algos.yaml](algos.yaml).
     - [base.py](kernel_matrix_benchmarks/algorithms/base.py): common interface for the methods included in the benchmark.
+    - [bruteforce.py](kernel_matrix_benchmarks/algorithms/bruteforce.py): reference implementation with NumPy.
   - [plotting/](kernel_matrix_benchmarks/plotting/):
     - [metrics.py](kernel_matrix_benchmarks/plotting/metrics.py): supported performance metrics.
     - [plot_variants.py](kernel_matrix_benchmarks/plotting/plot_variants.py): interesting pairs of metrics for the detailed webpages.

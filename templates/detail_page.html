@@ -1,23 +1,41 @@
 {% extends "general.html" %}
 {% block content %}
-        <div class="container">
+        <div class="container-fluid">
+            <h2>{{title}}</h2>
+
+
+            {% for item in plot_data.keys() %}
+            <ul class="list-inline">
+                {% if item=="normal" %}
+                    <b>Pareto fronts:</b>
+                {% elif item=="scatter" and args.scatter %}
+                    <b>Full data:</b>
+                {% endif %}
+                {% for plot in plot_data[item] %}
+                <li><a href="#{{ item }}{{ plot['tag'] }}">[{{plot["label"]}}]</a></li>
+                {% endfor %}
+            </ul>
+            {% endfor %}
+
+
         {% for item in plot_data.keys() %}
             {% if item=="normal" %}
-                {% if batch %}
-                    <h2>Plots for {{title}} in batch mode</h2>
-                {% else %}
-                    <h2>Plots for {{title}}</h2>
-                {% endif %}
+                <h2>Pareto fronts:</h2>
             {% elif item=="scatter" and args.scatter %}
-                {% if batch %}
-                    <h2>Scatterplots for {{title}} in batch mode</h2>
-                {% else %}
-                    <h2>Scatterplots for {{title}}</h2>
-                {% endif %}
+                <h2>Full data:</h2>
             {% endif %}
+        <div class="row">
             {% for plot in plot_data[item] %}
-            {{ plot }}
+                <div class="col-md-4" id="{{ item }}{{ plot['tag'] }}">
+                    <h4 class="text-center">{{ plot["label"] }}</h4>
+                    {{ plot["chart"] }}
+                </div>
+            {% if loop.cycle(false, false, true) %}
+            </div>
+            <div class="row">
+            {% endif %}
             {% endfor %}
+            </div>
             <hr />
         {% endfor %}
 {% endblock %}

@@ -1,66 +1,70 @@
 {% extends "general.html" %}
 {% block content %}
 <div class="container">
-    <h1>Info</h1>
-    <p>Kernel-Matrix-Benchmarks is a benchmarking environment for operations on kernel matrices. This website contains
-        the current benchmarking results. Please visit <a
-            href="http://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/">http://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/</a>
-        to get an overview over evaluated data sets and algorithms. Make a pull request on <a
-            href="http://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/">Github</a> to add your own code
-        or improvements to the
-        benchmarking system.
+    <h2>Benchmarks for kernel matrix vector products, inversions and attention layers</h2>
+    <p>This website provides a benchmarking environment for operations on kernel matrices. 
+        Please visit our <a
+            href="http://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/">GitHub repository</a>
+        for a guided tour of the platform. 
+        Note that this is an <b>open project</b>: you are welcome to make a pull request
+        to improve the benchmarking system or add support for a new algorithm.
     </p>
-    <div id="results">
-        <h1>Benchmarking Results</h1>
-        <p>Results are split by kernel and dataset. At the bottom of the page, you can find an overview of an
-            algorithm's performance on all datasets. The plots shown depict <em>Precision</em> (such as an L1, L2 or
-            L-infinity error, depending on the context) against <em>Run time</em>. Clicking on a plot reveals detailed
-            interactive plots, including
-            approximate precision and pre-computation time.</p>
-        {% for type in ['non-batch', 'batch'] %}
-        {% if len(dataset_with_distances[type]) > 0 %}
-        {% if type == 'batch' %}
-        <h2>Benchmarks for Batched Queries</h2>
-        {% else %}
-        <h2>Benchmarks for Single Queries</h2>
-        {% endif %}
+    <p>Results are split by dataset and algorithm. 
+        The plots depict the <b>root mean squared error</b> against <b>total run time</b>
+        for both kernel matrix products and solvers. 
+        Click on the images to access detailed
+        interactive plots with numerous <b>performance metrics</b>
+        and <b>Latex code</b> to include in your paper.
+    </p>
 
+    <ul class="list-inline"><b>Datasets:</b>
+        {% for dataset_name, _ in runs["by_dataset"]|dictsort %}
+        <li><a href="#{{dataset_name}}">{{dataset_name}}</a></li>
+        {% endfor %}
+    </ul>
+
+    <ul class="list-inline"><b>Algorithms:</b>
+        {% for algo, _ in runs["by_algorithm"]|dictsort %}
+        <li><a href="#{{algo}}">{{algo}}</a></li>
+        {% endfor %}
+    </ul>
+
+    <div id="results">
         <h2 id="datasets">Results by Dataset</h2>
-        {% for distance_data in dataset_with_distances[type] %}
-        <h3>Distance: {{ distance_data.name }} </h3>
-        {% for entry in distance_data.entries %}
-        <a href="./{{ entry.name }}.html">
-            <div class="row" id="{{entry.name}}">
-                <div class="col-md-4 bg-success">
-                    <h4>{{entry.desc}}</h4>
-                </div>
-                <div class="col-md-8">
-                    <img class="img-responsive" src="{{ entry.name }}.png" />
-                </div>
+
+        <div class="row">
+        {% for dataset_name, dataset_run in runs["by_dataset"]|dictsort %}
+            <div class="col-md-6" id="{{dataset_name}}">
+                <a href="./{{ dataset_name }}.html">
+                <h4 class="text-center">{{dataset_run["title"]}}</h4>
+                <img class="img-responsive" src="{{ dataset_name }}.png" />
+                </a>
             </div>
-        </a>
-        <hr />
-        {% endfor %}
-        {% endfor %}
-        <h2 id="algorithms">Results by Algorithm</h2>
-        <ul class="list-inline"><b>Algorithms:</b>
-            {% for algo in algorithms[type].keys() %}
-            <li><a href="#{{algo}}">{{algo}}</a></li>
-            {% endfor %}
-        </ul>
-        {% for algo in algorithms[type].keys()%}
-        <a href="./{{ algo }}.html">
-            <div class="row" id="{{algo}}">
-                <div class="col-md-4 bg-success">
-                    <h4>{{algo}}</h4>
-                </div>
-                <div class="col-md-8">
-                    <img class="img-responsive" src="{{ algo }}.png" />
-                </div>
-            </div>
-        </a>
-        <hr />
-        {% endfor %}
+        {% if loop.cycle(false, true) %}
+        </div>
+        <div class="row">
         {% endif %}
         {% endfor %}
+        </div>
+        <hr />
+
+        <h2 id="algorithms">Results by Algorithm</h2>
+
+        <div class="row">
+        {% for algo, _ in runs["by_algorithm"]|dictsort %}
+            <div class="col-md-6" id="{{algo}}">
+                <a href="./{{ algo }}.html">
+                <h4 class="text-center">{{algo}}</h4>
+                <img class="img-responsive" src="{{ algo }}.png" />
+                </a>
+            </div>
+        {% if loop.cycle(false, true) %}
+        </div>
+        <div class="row">
+        {% endif %}
+        {% endfor %}
+        </div>
+        <hr />
+
+
         {% endblock %}

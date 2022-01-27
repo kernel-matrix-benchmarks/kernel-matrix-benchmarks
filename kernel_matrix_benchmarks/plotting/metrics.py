@@ -1,195 +1,128 @@
+"""Defines all the performance metrics that may be displayed on the website.
+
+Metrics are stored in the dict "all_metrics" with the following syntax:
+
+all_metrics = {
+    "key-for-metric-1": {
+        "description": str, 
+            a label to put on the x/y axes.
+        "worst": float, typically float("inf") or float("-inf"),
+            useful to plot the Pareto frontier of optimal values.
+        "lim": [vmin, vmax] optional pair of floats,
+            useful to explicitely set the axes boundaries.
+        "function": function,
+            Scalar-valued function that implements the performance metric.
+            The expected keyword arguments are:
+                - dataset, the hdf5 file that defines the expected problem.
+                - result, float64 NumPy array, the output of the method.
+                - error, float64 NumPy array, = result - true_value.
+                - properties, dict of metadata associated to the algorithm run.
+                - metrics_cache, hdf5 file group where we can store some computations.
+    },
+    "key-for-metric-2": {
+        ...
+    }
+}
+"""
+
+
 from __future__ import absolute_import
 import numpy as np
 
 
-# !!! Obsolete
-def knn_threshold(data, count, epsilon):
-    return data[count - 1] + epsilon
+# Compute errors ===============================================================
 
 
-# !!! Obsolete
-def epsilon_threshold(data, count, epsilon):
-    return data[count - 1] * (1 + epsilon)
+def result_errors(*, error, metrics_cache, **kwargs):
+    """Computes a collection of metrics: median, average and max error + rmse.
+
+    Args:
+        error ((N,E) or (M,E) float64 array): the pointwise error values 
+            "output - true_value" of an algorithm run.
+        metrics_cache (HDF5 file category): cache to store the computed values.
+
+    Returns:
+        HDF5 file category: the cache where the error values and statistics are stored.
+    """
+    if "errors" not in metrics_cache:
+        # Create a sub-category in the HDF5 file:
+        errors_cache = metrics_cache.create_group("errors")
+
+        # Compute the L2-Euclidean norm of every output E-vector:
+        # (remember that in most cases, E=1 for scalar-valued computations)
+        norms = np.sqrt(np.sum(error ** 2, axis=-1))  # (N,E) -> (N,)
+
+        # Fill in the cache with statistics:
+        errors_cache.attrs["max"] = np.max(norms)
+        errors_cache.attrs["mean"] = np.mean(norms)
+        errors_cache.attrs["median"] = np.median(norms)
+        errors_cache.attrs["rmse"] = np.sqrt(np.mean(norms ** 2))
+
+    return metrics_cache["errors"]
 
 
-# !!! Obsolete
-def get_recall_values(dataset_distances, run_distances, count, threshold, epsilon=1e-3):
-    recalls = np.zeros(len(run_distances))
-    for i in range(len(run_distances)):
-        t = threshold(dataset_distances[i], count, epsilon)
-        actual = 0
-        for d in run_distances[i][:count]:
-            if d <= t:
-                actual += 1
-        recalls[i] = actual
-    return (np.mean(recalls) / float(count), np.std(recalls) / float(count), recalls)
+# Read the metadata defined in results.py ======================================
 
 
-# !!! Obsolete
-def knn(dataset_distances, run_distances, count, metrics, epsilon=1e-3):
-    if "knn" not in metrics:
-        print("Computing knn metrics")
-        knn_metrics = metrics.create_group("knn")
-        mean, std, recalls = get_recall_values(
-            dataset_distances, run_distances, count, knn_threshold, epsilon
-        )
-        knn_metrics.attrs["mean"] = mean
-        knn_metrics.attrs["std"] = std
-        knn_metrics["recalls"] = recalls
-    else:
-        print("Found cached result")
-    return metrics["knn"]
+def build_time(*, properties, **kwargs):
+    return properties["build_time"]
 
 
-# !!! Obsolete
-def epsilon(dataset_distances, run_distances, count, metrics, epsilon=0.01):
-    s = "eps" + str(epsilon)
-    if s not in metrics:
-        print("Computing epsilon metrics")
-        epsilon_metrics = metrics.create_group(s)
-        mean, std, recalls = get_recall_values(
-            dataset_distances, run_distances, count, epsilon_threshold, epsilon
-        )
-        epsilon_metrics.attrs["mean"] = mean
-        epsilon_metrics.attrs["std"] = std
-        epsilon_metrics["recalls"] = recalls
-    else:
-        print("Found cached result")
-    return metrics[s]
+def query_time(*, properties, **kwargs):
+    return properties["query_time"]
 
 
-# !!! Obsolete
-def rel(dataset_distances, run_distances, metrics):
-    if "rel" not in metrics.attrs:
-        print("Computing rel metrics")
-        total_closest_distance = 0.0
-        total_candidate_distance = 0.0
-        for true_distances, found_distances in zip(dataset_distances, run_distances):
-            for rdist, cdist in zip(true_distances, found_distances):
-                total_closest_distance += rdist
-                total_candidate_distance += cdist
-        if total_closest_distance < 0.01:
-            metrics.attrs["rel"] = float("inf")
-        else:
-            metrics.attrs["rel"] = total_candidate_distance / total_closest_distance
-    else:
-        print("Found cached result")
-    return metrics.attrs["rel"]
+def total_time(**kwargs):
+    return build_time(**kwargs) + query_time(**kwargs)
 
 
-# !!! Obsolete
-def queries_per_second(queries, attrs):
-    return 1.0 / attrs["best_search_time"]
+def memory_footprint(*, properties, **kwargs):
+    # TODO: should replace this with peak memory usage, including the query
+    return properties.get("memory_footprint", 0)
 
 
-# !!! Obsolete
-def index_size(queries, attrs):
-    # TODO(erikbern): should replace this with peak memory usage or something
-    return attrs.get("index_size", 0)
-
-
-def build_time(queries, attrs):
-    return attrs["build_time"]
-
-
-# !!! Obsolete
-def candidates(queries, attrs):
-    return attrs["candidates"]
-
-
-# !!! Obsolete
-def dist_computations(queries, attrs):
-    return attrs.get("dist_comps", 0) / (attrs["run_count"] * len(queries))
-
-
+# Summary ======================================================================
 # All possible choices of performance metrics that can be displayed
 # on the "x" or "y" axes of our plots:
 all_metrics = {
-    # !!! Obsolete
-    "k-nn": {
-        "description": "Recall",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: knn(
-            true_distances, run_distances, run_attrs["count"], metrics
-        ).attrs[
-            "mean"
-        ],  # noqa
-        "worst": float("-inf"),
-        "lim": [0.0, 1.03],
-    },
-    # !!! Obsolete
-    "epsilon": {
-        "description": "Epsilon 0.01 Recall",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: epsilon(
-            true_distances, run_distances, run_attrs["count"], metrics
-        ).attrs[
-            "mean"
-        ],  # noqa
-        "worst": float("-inf"),
-    },
-    # !!! Obsolete
-    "largeepsilon": {
-        "description": "Epsilon 0.1 Recall",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: epsilon(
-            true_distances, run_distances, run_attrs["count"], metrics, 0.1
-        ).attrs[
-            "mean"
-        ],  # noqa
-        "worst": float("-inf"),
-    },
-    # !!! Slightly obsolete
-    "rel": {
-        "description": "Relative Error",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: rel(
-            true_distances, run_distances, metrics
-        ),  # noqa
+    "max-error": {
+        "description": "Maximum error",
+        "function": lambda **kwargs: result_errors(**kwargs).attrs["max"],
         "worst": float("inf"),
     },
-    # !!! Obsolete
-    "qps": {
-        "description": "Queries per second (1/s)",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: queries_per_second(
-            true_distances, run_attrs
-        ),  # noqa
-        "worst": float("-inf"),
-    },
-    # !!! Slightly obsolete
-    "distcomps": {
-        "description": "Distance computations",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: dist_computations(
-            true_distances, run_attrs
-        ),  # noqa
+    "mean-error": {
+        "description": "Average error",
+        "function": lambda **kwargs: result_errors(**kwargs).attrs["mean"],
         "worst": float("inf"),
     },
-    "build": {
+    "median-error": {
+        "description": "Median error",
+        "function": lambda **kwargs: result_errors(**kwargs).attrs["median"],
+        "worst": float("inf"),
+    },
+    "rmse-error": {
+        "description": "RMSE",
+        "function": lambda **kwargs: result_errors(**kwargs).attrs["rmse"],
+        "worst": float("inf"),
+    },
+    "build-time": {
         "description": "Build time (s)",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: build_time(
-            true_distances, run_attrs
-        ),  # noqa
+        "function": build_time,
         "worst": float("inf"),
     },
-    # !!! Obsolete
-    "candidates": {
-        "description": "Candidates generated",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: candidates(
-            true_distances, run_attrs
-        ),  # noqa
+    "query-time": {
+        "description": "Query time (s)",
+        "function": query_time,
         "worst": float("inf"),
     },
-    # !!! Slightly obsolete
-    "indexsize": {
-        "description": "Index size (kB)",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: index_size(
-            true_distances, run_attrs
-        ),  # noqa
+    "total-time": {
+        "description": "Build+Query time (s)",
+        "function": total_time,
         "worst": float("inf"),
     },
-    # !!! Slightly obsolete
-    "queriessize": {
-        "description": "Index size (kB)/Queries per second (s)",
-        "function": lambda true_distances, run_distances, metrics, run_attrs: index_size(
-            true_distances, run_attrs
-        )
-        / queries_per_second(true_distances, run_attrs),  # noqa
+    "memory-footprint": {
+        "description": "Memory footprint (kB)",
+        "function": memory_footprint,
         "worst": float("inf"),
     },
 }

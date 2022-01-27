@@ -1,3 +1,52 @@
+"""Code to store the results of a computation.
+
+All results are stored as HDF5 files at:
+"results/dataset/algorithm/params_json_dump.hdf5".
+
+A result file "f" contains the following tables:
+
+- f["result"] = (N,E) or (M,E) float64 array.
+    The output of the computation, 
+    i.e. the target_signal "a_i"  with shape (N,E) (if algo.task == "product")
+    or the source signal "b_j" with shape (M,E) (if algo.task == "solver").
+
+- f["error"] = (N,E) or (M,E) float64 array.
+    The difference "result - true_answer".
+
+
+And the following metadata: 
+
+- f.attrs["dataset"] = str.
+    The name of the dataset.
+
+- f.attrs["algo"] = str.
+    The name of the algorithm used, from "algos.yaml".
+
+- f.attrs["name"] = str.
+    The name of the method, algo.name.
+
+- f.attrs["kernel"] = str.
+    The name of the kernel function used.
+
+- f.attrs["run_count"] = int.
+    The number of independent runs used to benchmark the precomputation
+    and query times.
+
+- f.attrs["build_time"] = float number.
+    The minimum time (among several runs) needed to warm-up the algorithm
+    and e.g. pre-compute a tree representation of the data or 
+    a Cholesky decomposition of the kernel matrix.
+
+- f.attrs["query_time"] = float number.
+    The minimum time (among several runs) needed to compute the result,
+    without taking into account the precomputation time.
+
+- f.attrs["memory_footprint"] = float number.
+    The memory size (in kiloBytes) of the pre-computed representation.
+
+The output of algo.get_additional() is also appended to the dict f.attrs.
+"""
+
 from __future__ import absolute_import
 
 import h5py
@@ -5,35 +54,49 @@ import json
 import os
 import re
 import traceback
+import numpy as np
+
+
+class CustomJSONizer(json.JSONEncoder):
+    def default(self, obj):
+        """Converts numpy's booleans to real booleans.
+        
+        This is necessary, since numpy's booleans are not supported by json.dumps().
+        """
+        return (
+            super().encode(bool(obj))
+            if isinstance(obj, np.bool_)
+            else super().default(obj)
+        )
 
 
 def get_result_filename(
-    dataset=None, count=None, definition=None, query_arguments=None, batch_mode=False
+    dataset=None, definition=None, query_arguments=None,
 ):
-    """Creates a filename thatlookss like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
+    """Creates a filename that looks like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
     d = ["results"]
     if dataset:
         d.append(dataset)
-    if count:  # !!! "count" is obsolete, a k-nn only variable !!!
-        # We could replace it with "kernel"
-        d.append(str(count))
     if definition:
-        d.append(definition.algorithm + ("-batch" if batch_mode else ""))
-        data = definition.arguments + query_arguments
+        d.append(definition.algorithm)
+        data = dict(definition.arguments, **query_arguments)
         # The filename is a "flat" expansion of the dict of parameters,
         # with all "non alphanumerical symbols" replaced by "_".
         d.append(
-            re.sub(r"\W+", "_", json.dumps(data, sort_keys=True)).strip("_") + ".hdf5"
+            re.sub(
+                r"\W+", "_", json.dumps(data, sort_keys=True, cls=CustomJSONizer)
+            ).strip("_")
+            + ".hdf5"
         )
     return os.path.join(*d)
 
 
-def store_results(dataset, count, definition, query_arguments, attrs, results, batch):
+def store_result(*, dataset, definition, query_arguments, attrs, result, error):
     """Stores the raw output of a computation."""
 
     # The result filename looks like
     # "results/dataset/algorithm/M_4_L_0_5.hdf5"
-    fn = get_result_filename(dataset, count, definition, query_arguments, batch)
+    fn = get_result_filename(dataset, definition, query_arguments)
 
     # Creates the folder "results/dataset/algorithm/":
     head, tail = os.path.split(fn)
@@ -44,39 +107,29 @@ def store_results(dataset, count, definition, query_arguments, attrs, results, b
     f = h5py.File(fn, "w")
 
     # attrs is a dictionary with keys:
-    # "build_time", "index_size", "algo", "dataset",
-    # "batch_mode", "best_search_time", "candidates",
-    # "expect_extra", "name", "run_count", "count" (obsolete)
+    # "build_time", "memory_footprint", "algo", "dataset",
+    # "best_query_time", "name", "run_count",
     # and algorithm-specific "extras".
     # All of this is saved in the hdf5 file.
     for k, v in attrs.items():
         f.attrs[k] = v
 
     # Stores the entries of the result with their computation times:
-    # !!! Currently, this method is ANN-specific
-    times = f.create_dataset("times", (len(results),), "f")
-    neighbors = f.create_dataset("neighbors", (len(results), count), "i")
-    distances = f.create_dataset("distances", (len(results), count), "f")
-    for i, (time, ds) in enumerate(results):
-        times[i] = time
-        neighbors[i] = [n for n, d in ds] + [-1] * (count - len(ds))
-        distances[i] = [d for n, d in ds] + [float("inf")] * (count - len(ds))
+    f["result"] = result
+    f["error"] = error  #  error = result - true_answer
+
     f.close()
 
 
-def load_all_results(dataset=None, count=None, batch_mode=False):
+def load_all_results(dataset=None):
     """Python iterator that returns all the "results" hdf5 files with the correct attributes."""
-    for root, _, files in os.walk(get_result_filename(dataset, count)):
+    for root, _, files in os.walk(get_result_filename(dataset)):
         for fn in files:
             if os.path.splitext(fn)[-1] != ".hdf5":
                 continue
             try:
                 f = h5py.File(os.path.join(root, fn), "r+")
                 properties = dict(f.attrs)
-                if batch_mode != properties["batch_mode"]:
-                    # "continue" -> skip to the next file
-                    continue
-
                 # "yield" = "return", but for iterators
                 yield properties, f
                 f.close()
@@ -87,7 +140,6 @@ def load_all_results(dataset=None, count=None, batch_mode=False):
 
 def get_unique_algorithms():
     algorithms = set()
-    for batch_mode in [False, True]:
-        for properties, _ in load_all_results(batch_mode=batch_mode):
-            algorithms.add(properties["algo"])
+    for properties, _ in load_all_results():
+        algorithms.add(properties["algo"])
     return algorithms

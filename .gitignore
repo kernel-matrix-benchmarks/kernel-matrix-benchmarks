@@ -16,6 +16,7 @@ data/*
 results/*
 !results/*.png
 
+website/
 venv
 
 .idea

@@ -1,99 +1,175 @@
 # This file is processed in kernel_matrix_benchmarks/algorithms/definitions.py
 # by the routine "get_definitions(...)"
 
-float: # Point coordinates = vectors of floats
-  any: # Any metric
-    # Full syntax example:
-    nicelibrary:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-nicelibrary
-      module: kernel_matrix_benchmarks.algorithms.nicelibrary # Python class
-      constructor: NiceLibrary # Python class name
-      base-args: ["@kernel"] # @dimension, ...
-      run-groups:
-        sptag:
-          # When @args is a list, the result is the Cartesian product of all of
-          # the things it contains; entries that aren't a list will be treated
-          # as lists of length one.
-          args: [["BKT", "KDT"]]
-          # This run group will produce two algorithm instances:
-          # NiceLibrary("gaussian", "BKT") and NiceLibrary("gaussian", "KDT"),
-          # each of which will be used to run 6 different queries.
-          query-args: [[100, 200, 400, 1000, 2000, 4000]]
+# Full syntax example:
+nicealgorithm:
+  disabled: true # This example is just here to showcase the syntax.
 
-        base:
-          # When @args is a dictionary, algorithm instances will be generated
-          # by taking the Cartesian product of all of its values.
-          arg-groups:
-            - { "tuneK": 10, "desiredRecall": [0.99, 0.97, 0.9, 0.5, 0.2, 0.1] }
-            - False
-          # This run group produces six algorithm instances:
-          # NiceLibrary("gaussian", {"tuneK": 10,
-          # "desiredRecall": 0.99}), NiceLibrary("angular",
-          # {"tuneK": 10, "desiredRecall": 0.97}), and so on up to
-          # NiceLibrary("angular", {"tuneK": 10, "desiredRecall":
-          # 0.1}).
+  # Specify the hardware on which this algorithm should be run:
+  # - CPU for a "r5b.16xlarge" instance on AWS EC2:
+  #   - Spot price ~ $0.70/h.
+  #   - 64vCPU - 2nd gen Intel Xeon Scalable (Cascade Lake) with AVX-512 support.
+  #   - No GPU.
+  #   - 512Gb RAM.
+  # - GPU for a "p3.2xlarge" instance on AWS EC2:
+  #   - Spot price ~ $0.92/h.
+  #   - 8vCPU - Intel Xeon E5-2686 v4 (Broadwell) with AVX2 but not AVX-512.
+  #   - 1 Tesla V100 GPU with 16Gb "RAM", 5,120 CUDA cores and 620 Tensor cores.
+  #   - 61Gb RAM.
+  hardware: CPU
 
-        M-4:
-          arg-groups:
-            - { "M": 4, "efConstruction": 500 }
-          query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
-        M-8:
-          arg-groups:
-            - { "M": 8, "efConstruction": 500 }
-          query-args: [[10, 20, 40, 80, 120, 200, 400, 600, 800]]
+  # Three boolean flags (all equal to false by default)
+  product: true # This model can be used for kernel matrix products...
+  attention: false # But not for attention layers (= row-normalize kernel products)
+  solver: false # or kernel matrix solvers.
 
-    dummy:
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.dummy_algo
-      constructor: DummyAlgoSt
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+  # Where can we find the Python API for this method?
+  docker-tag: kernel-matrix-benchmarks-nicedocker # built from install/Dockerfile.nicedocker
+  module: kernel_matrix_benchmarks.algorithms.nicelibrary # Python module
+  constructor: NiceAlgorithm # Python class name
 
-    bruteforce:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.bruteforce
-      constructor: BruteForce
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+  # List of parameter values.
+  # Every algorithm can be run with different parameter values,
+  # specified using a collection of run-groups. Each run-group is defined using:
+  #
+  # - datasets: a list of string expressions.
+  #     If any of these expressions matches the name of the dataset/experiment,
+  #     the run-group will be used. Note that all datasets are named as:
+  #     "{task}-{dataset-label}-D{Dimpoints}-E{Dimsignal}-M{Nsource}-N{Ntarget}-{kernel-name}".
+  #     Consequently, using e.g. "*-gaussian" is a simple way of filtering
+  #     experiments that are designed for Gaussian kernels.
+  #
+  # - args: a list of dict of "**kwargs".
+  #     Each run starts by instantiating the class constructor (specified above)
+  #     with these arguments and two extra keyword arguments:
+  #       - kernel: str, the name of the kernel function.
+  #       - dimension: int, the dimension D of the source and target points.
+  #
+  # - query-args: a list of dict of "**kwargs".
+  #     After the pre-processing phase (= construction of the kernel matrix)
+  #     but before the actual query, we may want to test different values
+  #     for parameters "at query time" without having to go through
+  #     the pre-processing phase every time.
+  #     This is enabled by the query-args parameters, which are fed to:
+  #       algo.set_query_arguments(**query-args)
+  #     after the pre-computation phase, but before the query.
+  #
+  # N.B.: We enforce a soft limit of up to 10 different runs per method per dataset.
+  #       The goal here is to keep things simple for library developers
+  #       (so that they do not have to tune a couple of "optimal" parameter values
+  #       per dataset) while keeping the cost of running the full benchmarks
+  #       on the AWS EC2 cloud reasonable.
+  run-groups:
+    simple-run: # Choose an arbitrary name for the group of runs.
+      datasets: # Match all experiments with...
+        - "*-E1-*-gaussian" # Gaussian kernels and scalar signal *or* ...
+        - "*-D3-*" # source and target points in dimension 3.
+      args: # Appended to {"kernel": ..., "dimension": ...} when calling the constructor.
+        - { "K": 10, "tol": 0.01 }
 
-    bruteforce-blas:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-sklearn
-      module: kernel_matrix_benchmarks.algorithms.bruteforce
-      constructor: BruteForceBLAS
-      base-args: ["@metric"]
-      run-groups:
-        empty:
-          args: []
+    two-runs:
+      datasets:
+        - "*-sphere-*-inverse-distance"
+      args:
+        - { "K": 10, "tol": 0.01 }
+        - { "K": 50, "tol": 0.001 }
 
-# We also support different types...
-bit:
-  # And metrics:
-  hamming:
-    mih:
-      disabled: true
-      docker-tag: kernel-matrix-benchmarks-mih
-      module: kernel_matrix_benchmarks.algorithms.subprocess
-      constructor: BitSubprocessPrepared
-      base-args: [["mih/bin/mihwrapper"]]
-      run-groups:
-        base:
-          # Note that MIH assumes that 5 <= dimension / chunks <= 37 and segfaults otherwise.
-          # This parameter space is explored below using the `chunk-factor`.
-          # A factor of 0 means that dimension / chunks = 5 which proceeds linearly to
-          # dimension / chunks = 37 for a factor of 1.
-          # The r parameter denotes a reordering with n / r steps. If r is 0, no reordering
-          # takes places. Otherwise, n / r points from the dataset are used for a
-          # re-ording process. MIH requires either r = 0 or r >= 2.
-          args:
-            {
-              "d": "@dimension",
-              "r": [0, 2, 3],
-              "chunk-factor": [0.2, 0.5, 0.8],
-            }
+    with-query-args:
+      datasets:
+        - "*" # Match all experiments!
+      args:
+        - { "K": 2, "tol": 0.1 }
+        - { "K": 5, "tol": 0.1 }
+      query-args:
+        - { "h": 3 }
+        - { "h": 9 }
+
+  # All in all, the code above defines:
+  # 1 run for datasets generated with a Gaussian or an absolute exponential kernel:
+  # - Instantiation with:
+  #   algo = NiceAlgorithm(kernel=..., dimension=D, K=10, tol=0.01)
+  #   then pre-computations with: algo.prepare_data(...) and algo.fit()
+  #   then no query arguments with: algo.set_query_arguments()
+  #   then query with: algo.prepare_query(...), algo.query(), algo.get_result()
+  #
+  # *and* 2 runs for datasets sampled on the sphere with an inverse distance kernel:
+  # - Instantiation with:
+  #   algo = NiceAlgorithm(kernel=..., dimension=D, K=10, tol=0.01)
+  #   and no query arguments.
+  # - Instantiation with:
+  #   algo = NiceAlgorithm(kernel=..., dimension=D, K=50, tol=0.001)
+  #   and no query arguments.
+  #
+  # *and* 4 additional runs for all datasets:
+  # - Instantiation with:
+  #   algo = NiceAlgorithm(kernel=..., dimension=D, K=2, tol=0.1)
+  #   and 2 runs with different query arguments:
+  #   - algo.set_query_arguments(h=3)
+  #   - algo.set_query_arguments(h=9)
+  # - Instantiation with:
+  #   algo = NiceAlgorithm(kernel=..., dimension=D, K=5, tol=0.1)
+  #   and 2 runs with different query arguments:
+  #   - algo.set_query_arguments(h=3)
+  #   - algo.set_query_arguments(h=9)
+  #
+  # Please note that in order to keep run times and costs manageable,
+  # we allow a maximum of **10 runs per method per dataset**
+  # so don't be too greedy ;-)
+
+dummy-product:
+  disabled: false
+  hardware: CPU
+  product: true
+  docker-tag: kernel-matrix-benchmarks-sklearn
+  module: kernel_matrix_benchmarks.algorithms.dummy_algo
+  constructor: DummyProduct
+
+  run-groups:
+    dummy-run:
+      datasets:
+        - "*" # Match all experiments
+
+dummy-solver:
+  disabled: false
+  hardware: CPU
+  solver: true
+  docker-tag: kernel-matrix-benchmarks-sklearn
+  module: kernel_matrix_benchmarks.algorithms.dummy_algo
+  constructor: DummySolver
+
+  run-groups:
+    dummy-run:
+      datasets:
+        - "*" # Match all experiments
+
+bruteforce-product-blas:
+  disabled: false
+  hardware: CPU
+  product: true
+  docker-tag: kernel-matrix-benchmarks-sklearn
+  module: kernel_matrix_benchmarks.algorithms.bruteforce
+  constructor: BruteForceProductBLAS
+  run-groups:
+    numerical-precision:
+      datasets:
+        - "*" # Match all experiments
+      args:
+        - { "precision": "float16" }
+        - { "precision": "float32" }
+        - { "precision": "float64" }
+
+bruteforce-solver-blas:
+  disabled: false
+  hardware: CPU
+  solver: true
+  docker-tag: kernel-matrix-benchmarks-sklearn
+  module: kernel_matrix_benchmarks.algorithms.bruteforce
+  constructor: BruteForceSolverLAPACK
+  run-groups:
+    numerical-precision:
+      datasets:
+        - "*" # Match all experiments
+      args:
+        - { "precision": "float16" }
+        - { "precision": "float32" }
+        - { "precision": "float64" }
