@@ -36,7 +36,7 @@ def instantiate_algorithm(definition):
         A python object that answers numerical queries.
     """
     print(
-        "Trying to instantiate %s.%s(%s)"
+        "Trying to instantiate %s.%s(**%s)"
         % (definition.module, definition.constructor, definition.arguments)
     )
     module = importlib.import_module(definition.module)

@@ -45,12 +45,18 @@ def run(*, definition, dataset, runs):
     f.close()
 
     # Display some info:
-    print(f"M={M:,} source points, N={N:,} target points in dimension {D:,}")
-    print(f"with a signal of dimension E={E:,}.")
+    print("")
+    print("========================================")
+    print(
+        f"M={M:,} source points, N={N:,} target points in dimension {D:,} "
+        f"with a signal of dimension E={E:,}."
+    )
     print(f"kernel='{kernel}'")
-    print(f"same_points? {same_points}")
-    print(f"normalize_rows? {normalize_rows}")
-    print(f"density_estimation? {density_estimation}")
+    print(
+        f"same_points? {same_points}, "
+        f"normalize_rows? {normalize_rows}, "
+        f"density_estimation? {density_estimation}."
+    )
 
     # We run our algorithm in a try-catch structure:
     try:

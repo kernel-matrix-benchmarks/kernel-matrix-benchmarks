@@ -335,7 +335,7 @@ def fashion_mnist(out_fn):
 
 # Kernel product on the 3D sphere:
 PRODUCT_SPHERE = {
-    "product-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
+    f"product-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
         n_points=n, dimension=3, radius=1, task="product", kernel="inverse-distance"
     )
     for n in [1000, 2000, 5000, 10000]
@@ -343,7 +343,7 @@ PRODUCT_SPHERE = {
 
 # Kernel solver on the 3D sphere:
 SOLVER_SPHERE = {
-    "solver-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
+    f"solver-sphere-D3-E1-M{n}-N{n}-inverse-distance": uniform_sphere(
         n_points=n, dimension=3, radius=1, task="solver", kernel="inverse-distance"
     )
     for n in [1000, 2000, 5000, 10000]

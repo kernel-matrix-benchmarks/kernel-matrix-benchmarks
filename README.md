@@ -146,8 +146,9 @@ Then:
 You can customize the algorithms and datasets if you want to:
 
 - Check that [algos.yaml](algos.yaml) contains the parameter settings that you want to test
-- To run experiments on Glove embeddings in dimension 100, invoke `python run.py --dataset glove-100-angular`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
-- To process the results, either use `python plot.py --dataset glove-100-angular` or `python create_website.py`. An example call: `python create_website.py --plottype recall/time --latex --scatter --outputdir website/`.
+- To run experiments on Glove embeddings in dimension 100, invoke `python run.py --local --dataset product-sphere-D3-E1-M1000-N1000-inverse-distance`. See `python run.py --help` for more information on possible settings. Note that experiments can take a long time.
+- To process the results, either use `python plot.py --dataset product-sphere-D3-E1-M1000-N1000-inverse-distance` or `python create_website.py`. An example call: `python create_website.py --latex --scatter --outputdir website/`.
+- Look at the [create_website_local.sh](create_website_local.sh) and [create_website_AWS.sh](create_website_AWS.sh) scripts for other examples.
 
 ### On the Amazon cloud
 
