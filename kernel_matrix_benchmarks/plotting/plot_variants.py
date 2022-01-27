@@ -3,6 +3,6 @@
 # The cost and performance keys are defined in all_metrics in metrics.py.
 all_plot_variants = {
     cost + "/" + perf: (cost, perf)
-    for cost in ["total-time", "query-time", "build-time", "memory-footprint"]
-    for perf in ["rmse-error", "max-error", "mean-error", "median-error"]
+    for cost in ["total-time", "query-time", "memory-footprint"]
+    for perf in ["rmse-error", "max-error", "mean-error"]
 }

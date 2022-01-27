@@ -1,4 +1,5 @@
-            <div id="{{ xlabel }}{{ ylabel }}{{ label }}">
+            
+            <div>
             <canvas id="chart{{ xlabel }}{{ ylabel }}{{ label }}" width="800" height="600"></canvas>
             <script>
                 var ctx = document.getElementById("chart{{ xlabel }}{{ ylabel }}{{ label }}");
@@ -24,7 +25,8 @@
                         {% endfor %}
                         ]},
                         options: {
-                            responsive: false,
+                            responsive: true,
+                            maintainAspectRatio: true, 
                             title:{
                                 display:true,
                                 text: '{{ plot_label }}'
@@ -106,7 +108,7 @@
             {% if args.latex %}
                 <div class="row">
                     <div class="col-md-4 text-center">
-                        <button type="button" id="button_{{button_label}}" class="btn btn-default" >Toggle latex code</button>
+                        <button type="button" id="button_{{button_label}}" class="btn btn-default" >Show latex code</button>
                     </div>
                 </div>
                 <script>

@@ -18,6 +18,7 @@ from kernel_matrix_benchmarks.plotting.plot_variants import (
 from kernel_matrix_benchmarks.plotting.metrics import all_metrics as metrics
 from kernel_matrix_benchmarks.plotting.utils import (
     get_plot_label,
+    get_chart_label,
     compute_all_metrics,
     create_pointset,
     create_linestyles,
@@ -157,10 +158,11 @@ def create_plot(
 
     # Insert the point coordinates in a tikzpicture:
     latex_code = j2_env.get_template("latex.template").render(
-        plot_data=plot_data,
+        data_points=plot_data,
         caption=get_plot_label(x_metric, y_metric),
         xlabel=x_metric["description"],
         ylabel=y_metric["description"],
+        render_all_points=render_all_points,
     )
 
     #  Mmmm... Do we really need to recompute the Pareto frontier here?
@@ -173,22 +175,24 @@ def create_plot(
         (get_plot_label(x_metric, y_metric) + additional_label).encode("utf-8")
     ).hexdigest()
 
-    # TODO: currently, all the details plot have a linear x axis
-    #       and a logarithmic y axis.
     # Insert the point coordinates in a javascript interactive plot:
-    return j2_env.get_template("chartjs.template").render(
-        args=args,
-        latex_code=latex_code,
-        button_label=button_label,
-        data_points=plot_data,
-        xlabel=x_metric["description"],
-        ylabel=y_metric["description"],
-        plottype=plottype,
-        plot_label=get_plot_label(x_metric, y_metric),
-        label=additional_label,
-        linestyle=linestyle,
-        render_all_points=render_all_points,
-    )
+    return {
+        "label": f'{y_metric["description"]} / {x_metric["description"]}',
+        "tag": f'{y_metric["description"]}-{x_metric["description"]}',
+        "chart": j2_env.get_template("chartjs.template").render(
+            args=args,
+            latex_code=latex_code,
+            button_label=button_label,
+            data_points=plot_data,
+            xlabel=x_metric["description"],
+            ylabel=y_metric["description"],
+            plottype=plottype,
+            plot_label=get_chart_label(x_metric, y_metric),
+            label=additional_label,
+            linestyle=linestyle,
+            render_all_points=render_all_points,
+        ),
+    }
 
 
 def build_detail_site(*, full_data, j2_env, linestyles):

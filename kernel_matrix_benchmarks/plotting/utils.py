@@ -271,3 +271,11 @@ def get_plot_label(x_metric, y_metric):
         "leftright": get_left_right(x_metric),
         "updown": get_up_down(y_metric),
     }
+
+
+def get_chart_label(x_metric, y_metric):
+    template = "%(updown)s and to the %(leftright)s is better"
+    return template % {
+        "leftright": get_left_right(x_metric),
+        "updown": get_up_down(y_metric),
+    }

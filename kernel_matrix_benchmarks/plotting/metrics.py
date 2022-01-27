@@ -101,7 +101,7 @@ all_metrics = {
         "worst": float("inf"),
     },
     "rmse-error": {
-        "description": "Root mean squared error",
+        "description": "RMSE",
         "function": lambda **kwargs: result_errors(**kwargs).attrs["rmse"],
         "worst": float("inf"),
     },
