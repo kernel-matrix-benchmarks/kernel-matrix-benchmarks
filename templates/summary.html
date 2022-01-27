@@ -33,12 +33,16 @@
 
         <div class="row">
         {% for dataset_name, dataset_run in runs["by_dataset"]|dictsort %}
-        <div class="col-md-6" id="{{dataset_name}}">
-            <a href="./{{ dataset_name }}.html">
-            <h4 class="text-center">{{dataset_run["title"]}}</h4>
-            <img class="img-responsive" src="{{ dataset_name }}.png" />
-            </a>
+            <div class="col-md-6" id="{{dataset_name}}">
+                <a href="./{{ dataset_name }}.html">
+                <h4 class="text-center">{{dataset_run["title"]}}</h4>
+                <img class="img-responsive" src="{{ dataset_name }}.png" />
+                </a>
+            </div>
+        {% if loop.cycle(false, true) %}
         </div>
+        <div class="row">
+        {% endif %}
         {% endfor %}
         </div>
         <hr />
@@ -53,6 +57,10 @@
                 <img class="img-responsive" src="{{ algo }}.png" />
                 </a>
             </div>
+        {% if loop.cycle(false, true) %}
+        </div>
+        <div class="row">
+        {% endif %}
         {% endfor %}
         </div>
         <hr />
