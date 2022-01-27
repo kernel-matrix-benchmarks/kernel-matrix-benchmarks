@@ -111,19 +111,11 @@ All data sets are pre-split into train/test and come with ground truth data. We 
 ## Results
 
 Full interactive plots can be found at <http://kernel-matrix-benchmarks.com>.
-The main performance graphs are summarized below, with one figure per dataset:
+The main performance graphs are summarized below:
 
-### fashion-mnist-784-euclidean
+### Scaling up kernel products on the sphere
 
-![fashion-mnist-784-euclidean](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/fashion-mnist-784-euclidean.png)
-
-### glove-25-angular
-
-![glove-25-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-25-angular.png)
-
-### glove-100-angular
-
-![glove-100-angular](https://raw.github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/master/results/glove-100-angular.png)
+...
 
 ## Run the benchmarks
 
