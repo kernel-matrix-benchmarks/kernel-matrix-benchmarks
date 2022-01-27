@@ -15,6 +15,7 @@ from kernel_matrix_benchmarks.definitions import (
     Definition,
     instantiate_algorithm,
 )
+from kernel_matrix_benchmarks.results import CustomJSONizer
 from kernel_matrix_benchmarks.datasets import get_dataset, DATASETS
 from kernel_matrix_benchmarks.results import store_result
 
@@ -257,9 +258,11 @@ def run_docker(*, definition, dataset, runs, timeout, cpu_limit, mem_limit=None)
     ]
 
     # Arguments of the "constructor":
-    cmd.append(json.dumps(definition.arguments))
+    cmd.append(json.dumps(definition.arguments, cls=CustomJSONizer))
     # Arguments at query time (for a fixed constructor):
-    cmd += [json.dumps(qag) for qag in definition.query_argument_groups]
+    cmd += [
+        json.dumps(qag, cls=CustomJSONizer) for qag in definition.query_argument_groups
+    ]
 
     # Wake-up Docker:
     client = docker.from_env()
