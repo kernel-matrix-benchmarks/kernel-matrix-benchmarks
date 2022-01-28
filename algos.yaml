@@ -173,3 +173,24 @@ bruteforce-solver-blas:
         - { "precision": "float16" }
         - { "precision": "float32" }
         - { "precision": "float64" }
+
+htool-product:
+  disabled: false
+  hardware: CPU
+  product: true
+  attention: true
+  docker-tag: kernel-matrix-benchmarks-htool
+  module: kernel_matrix_benchmarks.algorithms.htool
+  constructor: HtoolProduct
+  run-groups:
+    numerical-precision:
+      datasets:
+        - "*" # Match all experiments
+      args:
+        - {
+            "eta": 100,
+            "epsilon": 0.001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+          }
