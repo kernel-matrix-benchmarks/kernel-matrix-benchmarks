@@ -96,7 +96,9 @@ We have pre-generated data sets with relevant evaluation metrics and provide a D
 ## Data sets
 
 We provide a varied collection of test cases for the methods above.
-All data sets are pre-split into train/test and come with ground truth data. We store the inputs and expected output in HDF5 format:
+All data sets are pre-split into source/target points and come with ground truth data. 
+We store the inputs and expected output in HDF5 format,
+following the conventions outlined in [datasets.py](kernel_matrix_benchmarks/datasets.py):
 
 | Dataset                                                           | Dimensions | Train size | Test size | Kernel | Distance  | Download                                                                   |
 | ----------------------------------------------------------------- | ---------: | ---------: | --------: | ----------: | --------- | -------------------------------------------------------------------------- |
@@ -110,7 +112,7 @@ All data sets are pre-split into train/test and come with ground truth data. We 
 
 ## Results
 
-Full interactive plots can be found at <http://kernel-matrix-benchmarks.com>.
+Full interactive plots can be found on our [website](http://kernel-matrix-benchmarks.com).
 The main performance graphs are summarized below:
 
 ### Scaling up kernel products on the sphere
@@ -211,11 +213,32 @@ Once you are done with your instance,
 
 ## Including your algorithm
 
-1. Add your algorithm into [kernel_matrix_benchmarks/algorithms](kernel_matrix_benchmarks/algorithms)
-   by providing a small Python wrapper.
-2. Add a Dockerfile in [install/](install/) for it
-3. Add it to [algos.yaml](algos.yaml)
+We welcome all contributions to this benchmarking platform.
+To add support for a new algorithm, please:
 
+1. Write a small Python wrapper for your algorithm in
+   [kernel_matrix_benchmarks/algorithms](kernel_matrix_benchmarks/algorithms).
+   The full API is detailed in [base.py](kernel_matrix_benchmarks/algorithms/base.py)
+   and you may look at our [bruteforce implementation]((kernel_matrix_benchmarks/algorithms/bruteforce.py))
+   for reference.
+   Feel free to read the other wrappers to see how to interface Python
+   with a Julia or a C++ library, load CUDA drivers, etc.
+   If you're curious, please note that the actual "benchmarking function"
+   is located in [runner.py](kernel_matrix_benchmarks/runner.py).
+2. Add a Dockerfile for your library in [install/](install/).
+   Please call it `Dockerfile.nameofyourlibrary`.
+3. Document your method in [algos.yaml](algos.yaml).
+   You may specify different lists of arguments for different tasks and datasets.
+   The full syntax is illustrated at the beginning of [algos.yaml](algos.yaml).
+4. Please note that we apply [black linting](https://github.com/psf/black) to all commits.
+5. Submit a pull request on our [repository](https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/pulls).
+
+While debugging on your local machine, you may find
+the [create_website](create_website_local.sh) script helpful.
+We will make sure that your code runs smoothly
+and re-render our [website](https://www.kernel-matrix-benchmarks.com/) 
+on the AWS EC2 cloud before merging your contributions.
+Thanks!
 
 ## Main files
 
