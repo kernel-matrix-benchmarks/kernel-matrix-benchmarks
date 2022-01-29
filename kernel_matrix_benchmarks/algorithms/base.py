@@ -165,4 +165,3 @@ class BaseSolver(BaseAlgorithm):
             (M,E) array: output of the computation at the M points y_j.
         """
         return np.ascontiguousarray(self.res, dtype=np.float64)
-
