@@ -8,12 +8,11 @@ from kernel_matrix_benchmarks.algorithms.base import BaseProduct, BaseSolver
 def inverse_square_root(sqdists):
     """Inefficient implementation of "rsqrt", which is not supported by NumPy."""
     sqdists_0 = np.maximum(sqdists, 0)
-    # Work-around to avoid divisions by zero:
-    mask = sqdists_0 < 1e-5
-    sqdists_0[mask] = 1
     res = 1 / np.sqrt(sqdists_0)
-    res[mask] = 0
-    return res
+    # Put zeroes on the diagonal:
+    buffer = res.reshape(-1)
+    buffer[:: res.shape[1] + 1] = 0
+    return buffer.reshape(res.shape)
 
 
 kernel_functions = {
