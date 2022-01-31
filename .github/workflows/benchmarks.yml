@@ -29,7 +29,7 @@ jobs:
 
       - name: Run the benchmark
         run: |
-          python3 run.py --docker-tag kernel-matrix-benchmarks-${LIBRARY} --max-n-algorithms 2 --dataset $DATASET --run-disabled --timeout 300
+          python3 run.py --docker-tag kernel-matrix-benchmarks-${LIBRARY} --max-n-algorithms 5 --dataset $DATASET --run-disabled --timeout 300
           sudo chmod -R 777 results/
           python3 plot.py --dataset $DATASET --output plot.png
           # python3 -m unittest test/test-metrics.py

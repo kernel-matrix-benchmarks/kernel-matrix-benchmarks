@@ -91,7 +91,7 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
         loc=legend_location,
         prop={"size": 9},  # bbox_to_anchor=(1, 0.5)
     )
-    plt.grid(b=True, which="major", color="0.65", linestyle="-")
+    plt.grid(visible=True, which="major", color="0.65", linestyle="-")
     plt.setp(ax.get_xminorticklabels(), visible=True)
 
     if "lim" in x_metric:
