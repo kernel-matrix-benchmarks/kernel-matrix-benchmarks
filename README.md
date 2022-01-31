@@ -2,6 +2,10 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/kernel-matrix-benchmarks/kernel-matrix-benchmarks/kernel%20matrix%20benchmarks?style=flat-square)](https://github.com/kernel-matrix-benchmarks/kernel-matrix-benchmarks/actions?query=workflow:benchmarks)
 
+<p align="center">
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
 Computations with kernel matrices are a key bottleneck in many applied fields, from numerical physics to machine learning.
 This website compares acceleration methods for these problems in an objective way.
 
@@ -16,16 +20,16 @@ Specifically, we are interested in **three types of computations**:
 - M **source** signals b<sub>1</sub>,..., b<sub>M</sub> in dimension E, encoded as a `(M,E)` array.
   E=1 in most applications.
 
-Then, we compute the `(N,E)` array of **target** signals 
+Then, we compute the `(N,E)` array of **target** signals
 a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+." 
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+."
 alt="a_i \gets \sum_{j=1}^\text{M} k(x_i,y_j)\,b_j .">
 </p>
 
-We understand this computation as the product between the `(N,M)` 
+We understand this computation as the product between the `(N,M)`
 **kernel matrix** K<sub>i,j</sub> = k(x<sub>i</sub>, y<sub>j</sub>) and
 the `(M,E)` matrix of source signals.
 Depending on the context, this operation is known as
@@ -41,7 +45,7 @@ a<sub>1</sub>,..., a<sub>N</sub> with, for all i between 1 and N:
 
 <p align="center">
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Cfrac%7B+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+%7D%7B%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%7D." 
+"https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+a_i+%5Cgets+%5Cfrac%7B+%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%5C%2Cb_j+%7D%7B%5Csum_%7Bj%3D1%7D%5E%5Ctext%7BM%7D+k%28x_i%2Cy_j%29%7D."
 alt="a_i \gets \frac{ \sum_{j=1}^\text{M} k(x_i,y_j)\,b_j }{\sum_{j=1}^\text{M} k(x_i,y_j)}.">
 </p>
 
@@ -73,7 +77,6 @@ alt="\sum_{j=1}^\text{M} k(x_i,y_j)\,b_j = a_i.">
 This operation is a key bottleneck for algorithms based on **Gaussian processes**,
 **Kriging**, **spline** interpolation, **kernel** regression and the **Boundary Element Method**.
 
-
 ## Scope
 
 This project contains tools to benchmark various implementations of these operations in a wide range of settings:
@@ -96,7 +99,7 @@ We have pre-generated data sets with relevant evaluation metrics and provide a D
 ## Data sets
 
 We provide a varied collection of test cases for the methods above.
-All data sets are pre-split into source/target points and come with ground truth data. 
+All data sets are pre-split into source/target points and come with ground truth data.
 We store the inputs and expected output in HDF5 format,
 following the conventions outlined in [datasets.py](kernel_matrix_benchmarks/datasets.py):
 
@@ -108,7 +111,6 @@ following the conventions outlined in [datasets.py](kernel_matrix_benchmarks/dat
 | GloVe                                                             |         50 |  1,183,514 |    10,000 | Exponential | Angular   | [HDF5](http://ann-benchmarks.com/glove-50-angular.hdf5) (235MB)            |
 | GloVe                                                             |        100 |  1,183,514 |    10,000 | Exponential | Angular   | [HDF5](http://ann-benchmarks.com/glove-100-angular.hdf5) (463MB)           |
 | GloVe                                                             |        200 |  1,183,514 |    10,000 | Exponential | Angular   | [HDF5](http://ann-benchmarks.com/glove-200-angular.hdf5) (918MB)           |
-
 
 ## Results
 
@@ -191,8 +193,8 @@ ssh -i "kernel-matrix-benchmarks.pem" ubuntu@ec2-1-234-567-890.compute-1.amazona
 
 7. You can monitor progress with:
 
-  - `tmux a` to get access to the terminal running [create_website_AWS.sh](create_website_AWS.sh).
-  - `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
+- `tmux a` to get access to the terminal running [create_website_AWS.sh](create_website_AWS.sh).
+- `less -R kernel-matrix-benchmarks/kmb.log` to read the log file.
 
 8. Once all benchmarks have been run, the full results will be located in `your-instance:/home/ubuntu/kernel-matrix-benchmarks/website.zip`. Download the archive on your local machine with:
 
@@ -209,7 +211,6 @@ Please note that the AWS Console allows you to keep track of your
 and [billing information](https://console.aws.amazon.com/billing/home?region=us-east-1#/).
 Once you are done with your instance,
 **don't forget to cancel your Spot request, terminate your instances and destroy your storage volumes**.
-
 
 ## Including your algorithm
 
@@ -236,7 +237,7 @@ To add support for a new algorithm, please:
 While debugging on your local machine, you may find
 the [create_website](create_website_local.sh) script helpful.
 We will make sure that your code runs smoothly
-and re-render our [website](https://www.kernel-matrix-benchmarks.com/) 
+and re-render our [website](https://www.kernel-matrix-benchmarks.com/)
 on the AWS EC2 cloud before merging your contributions.
 Thanks!
 
