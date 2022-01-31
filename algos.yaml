@@ -117,7 +117,7 @@ nicealgorithm:
   # so don't be too greedy ;-)
 
 dummy-product:
-  disabled: false
+  disabled: true
   hardware: CPU
   product: true
   docker-tag: kernel-matrix-benchmarks-sklearn
@@ -130,7 +130,7 @@ dummy-product:
         - "*" # Match all experiments
 
 dummy-solver:
-  disabled: false
+  disabled: true
   hardware: CPU
   solver: true
   docker-tag: kernel-matrix-benchmarks-sklearn
@@ -154,9 +154,12 @@ bruteforce-product-blas:
       datasets:
         - "*" # Match all experiments
       args:
-        - { "precision": "float16" }
-        - { "precision": "float32" }
-        - { "precision": "float64" }
+        - { "fast_sqdists": false, "precision": "float16" }
+        - { "fast_sqdists": false, "precision": "float32" }
+        - { "fast_sqdists": false, "precision": "float64" }
+        - { "fast_sqdists": true, "precision": "float16" }
+        - { "fast_sqdists": true, "precision": "float32" }
+        - { "fast_sqdists": true, "precision": "float64" }
 
 bruteforce-solver-blas:
   disabled: false
@@ -170,9 +173,12 @@ bruteforce-solver-blas:
       datasets:
         - "*" # Match all experiments
       args:
-        - { "precision": "float16" }
-        - { "precision": "float32" }
-        - { "precision": "float64" }
+        - { "fast_sqdists": false, "precision": "float16" }
+        - { "fast_sqdists": false, "precision": "float32" }
+        - { "fast_sqdists": false, "precision": "float64" }
+        - { "fast_sqdists": true, "precision": "float16" }
+        - { "fast_sqdists": true, "precision": "float32" }
+        - { "fast_sqdists": true, "precision": "float64" }
 
 htool-product:
   disabled: false
