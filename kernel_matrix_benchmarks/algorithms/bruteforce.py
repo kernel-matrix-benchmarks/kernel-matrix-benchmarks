@@ -26,12 +26,12 @@ def kernel_matrix(*, kernel, source_points, target_points=None):
     # Pre-compute the squared Euclidean norm of each point:
     if target_points is None:
         target_points = source_points  # (N,D) = (M,D)
-        source_sqnorms = (source_points ** 2).sum(-1)  # (M,)
+        source_sqnorms = (source_points**2).sum(-1)  # (M,)
         target_sqnorms = source_sqnorms  # (N,)
 
     else:
-        source_sqnorms = (source_points ** 2).sum(-1)  # (M,)
-        target_sqnorms = (target_points ** 2).sum(-1)  # (N,)
+        source_sqnorms = (source_points**2).sum(-1)  # (M,)
+        target_sqnorms = (target_points**2).sum(-1)  # (N,)
 
     # Extract the shape of the data:
     M, D = source_points.shape
@@ -137,7 +137,7 @@ class BruteForceProductBLAS(BaseProduct):
 
 class BruteForceSolverLAPACK(BaseSolver):
     """Bruteforce implementation, using LAPACK ?POSV through SciPy.
-    
+
     We assume that the kernel matrix is symmetric, positive definite.
     """
 

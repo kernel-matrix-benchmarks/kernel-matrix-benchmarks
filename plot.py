@@ -25,7 +25,7 @@ from kernel_matrix_benchmarks.results import (
 
 def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyles):
     """Creates a .png file and save it at location 'fn_out'.
-    
+
     This routine is called using the command line, thanks to the API
     that is defined at the end of this file.
     """

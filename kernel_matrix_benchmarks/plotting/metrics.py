@@ -37,7 +37,7 @@ def result_errors(*, error, metrics_cache, **kwargs):
     """Computes a collection of metrics: median, average and max error + rmse.
 
     Args:
-        error ((N,E) or (M,E) float64 array): the pointwise error values 
+        error ((N,E) or (M,E) float64 array): the pointwise error values
             "output - true_value" of an algorithm run.
         metrics_cache (HDF5 file category): cache to store the computed values.
 
@@ -50,13 +50,13 @@ def result_errors(*, error, metrics_cache, **kwargs):
 
         # Compute the L2-Euclidean norm of every output E-vector:
         # (remember that in most cases, E=1 for scalar-valued computations)
-        norms = np.sqrt(np.sum(error ** 2, axis=-1))  # (N,E) -> (N,)
+        norms = np.sqrt(np.sum(error**2, axis=-1))  # (N,E) -> (N,)
 
         # Fill in the cache with statistics:
         errors_cache.attrs["max"] = np.max(norms)
         errors_cache.attrs["mean"] = np.mean(norms)
         errors_cache.attrs["median"] = np.median(norms)
-        errors_cache.attrs["rmse"] = np.sqrt(np.mean(norms ** 2))
+        errors_cache.attrs["rmse"] = np.sqrt(np.mean(norms**2))
 
     return metrics_cache["errors"]
 

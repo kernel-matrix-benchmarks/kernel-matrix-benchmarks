@@ -60,7 +60,7 @@ import numpy as np
 class CustomJSONizer(json.JSONEncoder):
     def default(self, obj):
         """Converts numpy's booleans to real booleans.
-        
+
         This is necessary, since numpy's booleans are not supported by json.dumps().
         """
         return (
@@ -71,7 +71,9 @@ class CustomJSONizer(json.JSONEncoder):
 
 
 def get_result_filename(
-    dataset=None, definition=None, query_arguments=None,
+    dataset=None,
+    definition=None,
+    query_arguments=None,
 ):
     """Creates a filename that looks like "results/dataset/algorithm/M_4_L_0_5.hdf5"."""
     d = ["results"]

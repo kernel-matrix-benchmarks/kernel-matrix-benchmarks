@@ -32,7 +32,9 @@ class HtoolProduct(BaseProduct):
 
         # Save the kernel_name, dimension, precision type and normalize_rows boolean:
         super().__init__(
-            kernel=kernel, dimension=dimension, normalize_rows=normalize_rows,
+            kernel=kernel,
+            dimension=dimension,
+            normalize_rows=normalize_rows,
         )
 
         if kernel not in HtoolSupportedKernels:
