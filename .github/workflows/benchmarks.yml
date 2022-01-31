@@ -10,8 +10,6 @@ jobs:
         include:
           - library: sklearn
             dataset: product-sphere-D3-E1-M1000-N1000-inverse-distance
-          - library: scipy
-            dataset: product-sphere-D3-E1-M1000-N1000-inverse-distance
       fail-fast: false
 
     steps:
@@ -31,11 +29,11 @@ jobs:
 
       - name: Run the benchmark
         run: |
-          python3 run.py --docker-tag ann-benchmarks-${LIBRARY} --max-n-algorithms 5 --dataset $DATASET --run-disabled --timeout 300
+          python3 run.py --docker-tag kernel-matrix-benchmarks-${LIBRARY} --max-n-algorithms 2 --dataset $DATASET --run-disabled --timeout 300
           sudo chmod -R 777 results/
           python3 plot.py --dataset $DATASET --output plot.png
-          python3 -m unittest test/test-metrics.py
-          python3 create_website.py --outputdir . --scatter --latex
+          # python3 -m unittest test/test-metrics.py
+          python3 create_website.py --scatter --latex --outputdir website
 
         env:
           LIBRARY: ${{ matrix.library }}
