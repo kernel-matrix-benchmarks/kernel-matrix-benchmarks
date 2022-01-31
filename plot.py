@@ -108,7 +108,11 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", metavar="DATASET", default="glove-25-angular")
+    parser.add_argument(
+        "--dataset",
+        metavar="DATASET",
+        default="product-sphere-D3-E1-M1000-N1000-inverse-distance",
+    )
     parser.add_argument(
         "--definitions",
         metavar="FILE",
