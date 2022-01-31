@@ -178,7 +178,7 @@ if __name__ == "__main__":
         raise Exception("Nothing to plot")
 
     create_plot(
-        all_data=runs,
+        data=runs,
         raw=args.raw,
         x_scale=args.x_scale,
         y_scale=args.y_scale,
