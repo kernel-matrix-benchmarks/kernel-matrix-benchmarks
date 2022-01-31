@@ -5,6 +5,7 @@ RUN apt-get update \
     libblas-dev liblapack-dev mpich libmpich-dev cmake\
     && git clone --recurse-submodules https://github.com/PierreMarchand20/htool-kernel-matrix-benchmarks.git \
     && cd htool-kernel-matrix-benchmarks \
+    && pip3 install -r requirements.txt \
     && pip3 install . \
     && cd .. && rm -r htool-kernel-matrix-benchmarks
 RUN python3 -c 'import HtoolKernelMatrixBenchmarks as HtoolBench'
