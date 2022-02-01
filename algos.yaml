@@ -184,7 +184,8 @@ htool-product:
   disabled: false
   hardware: CPU
   product: true
-  attention: true
+  attention: false
+  solver: false
   docker-tag: kernel-matrix-benchmarks-htool
   module: kernel_matrix_benchmarks.algorithms.htool
   constructor: HtoolProduct
@@ -193,10 +194,53 @@ htool-product:
       datasets:
         - "*" # Match all experiments
       args:
+        # Dense
+        - {
+            "eta": -100,
+            "epsilon": 0.001,
+            "source_minclustersize": 1000,
+            "symmetry": "N",
+            "UPLO": "N",
+            "precision": "Double",
+          }
+        - {
+            "eta": -100,
+            "epsilon": 0.001,
+            "source_minclustersize": 1000,
+            "symmetry": "N",
+            "UPLO": "N",
+            "precision": "Single",
+          }
+          # Compressed
+        - {
+            "eta": 100,
+            "epsilon": 0.00001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Double",
+          }
+        - {
+            "eta": 100,
+            "epsilon": 0.00001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Single",
+          }
         - {
             "eta": 100,
             "epsilon": 0.001,
             "source_minclustersize": 100,
             "symmetry": "S",
             "UPLO": "L",
+            "precision": "Double",
+          }
+        - {
+            "eta": 100,
+            "epsilon": 0.001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Single",
           }

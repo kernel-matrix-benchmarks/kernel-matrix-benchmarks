@@ -28,6 +28,7 @@ class HtoolProduct(BaseProduct):
         source_minclustersize=10,
         symmetry="N",
         UPLO="N",
+        precision="Double",
     ):
 
         # Save the kernel_name, dimension, precision type and normalize_rows boolean:
@@ -40,7 +41,7 @@ class HtoolProduct(BaseProduct):
         if kernel not in HtoolSupportedKernels:
             raise NotImplementedError(f"HtoolProduct doesn't support kernel {kernel}.")
 
-        self.name = f"HtoolProduct"
+        self.name = f"HtoolProduct({precision},epsilon={epsilon},eta={eta},maxblocksize={maxblocksize},target_minclustersize={target_minclustersize},source_minclustersize={source_minclustersize},symmetry={symmetry},UPLO={UPLO})"
         self.eta = eta
         self.epsilon = epsilon
         self.maxblocksize = maxblocksize
@@ -48,13 +49,29 @@ class HtoolProduct(BaseProduct):
         self.target_minclustersize = target_minclustersize
         self.source_minclustersize = source_minclustersize
         self.UPLO = UPLO
-        self.bench = HtoolBench.HtoolBenchmarkPCARegularClustering(
-            dimension,
-            HtoolSupportedKernels[kernel],
-            "partialACA",
-            self.symmetry,
-            self.UPLO,
-        )
+        self.precision = precision
+        if self.precision == "Double":
+            self.bench = HtoolBench.HtoolBenchmarkPCARegularClusteringDouble(
+                dimension,
+                HtoolSupportedKernels[kernel],
+                "partialACA",
+                self.symmetry,
+                self.UPLO,
+            )
+            self.numpy_precision = np.double
+        elif self.precision == "Single":
+            self.bench = HtoolBench.HtoolBenchmarkPCARegularClusteringFloat(
+                dimension,
+                HtoolSupportedKernels[kernel],
+                "partialACA",
+                self.symmetry,
+                self.UPLO,
+            )
+            self.numpy_precision = np.single
+        else:
+            raise NotImplementedError(
+                f"HtoolProduct doesn't support precision {precision}."
+            )
 
     def prepare_data(
         self,
@@ -67,15 +84,19 @@ class HtoolProduct(BaseProduct):
         """Casts data to the required precision."""
         # Cast to the required precision and make sure
         # that everyone is contiguous for top performance:
-        self.source_points = np.asfortranarray(source_points, dtype=np.double)
-        self.NbCols = self.source_points.shape[0]
+        self.source_points = np.asfortranarray(
+            np.transpose(source_points), dtype=np.double
+        )
+        self.NbCols = self.source_points.shape[1]
         self.target_points = (
-            None if same_points else np.asfortranarray(target_points, dtype=np.double)
+            None
+            if same_points
+            else np.asfortranarray(np.transpose(target_points), dtype=np.double)
         )
         if same_points:
             self.NbRows = self.NbCols
         else:
-            self.NbRows = self.target_points.shape[0]
+            self.NbRows = self.target_points.shape[1]
 
         # Remember if the source and target points are identical:
         self.same_points = same_points
@@ -112,7 +133,10 @@ class HtoolProduct(BaseProduct):
 
     def prepare_query(self, *, source_signal):
         # Cast to the required precision and as contiguous array for top performance:
-        self.source_signal = np.asfortranarray(source_signal, dtype=np.double)
+        self.source_signal = np.asfortranarray(
+            source_signal, dtype=self.numpy_precision
+        )
+
         if self.normalize_rows:
             ones_column = np.ones_like(self.source_signal[..., :1])
             signal_1 = np.concatenate((self.source_signal, ones_column), axis=1)
@@ -122,7 +146,9 @@ class HtoolProduct(BaseProduct):
     def query(self):
         if self.normalize_rows:
             res_sum = np.zeros(
-                (self.NbRows, self.source_signal.shape[1]), dtype=np.double, order="F"
+                (self.NbRows, self.source_signal.shape[1]),
+                dtype=self.numpy_precision,
+                order="F",
             )
             self.bench.product(self.source_signal, res_sum)
             # Normalized rows for e.g. attention layers.
@@ -132,6 +158,8 @@ class HtoolProduct(BaseProduct):
             self.res = res_sum[:, :-1] / res_sum[:, -1:]
         else:
             self.res = np.zeros(
-                (self.NbRows, self.source_signal.shape[1]), dtype=np.double, order="F"
+                (self.NbRows, self.source_signal.shape[1]),
+                dtype=self.numpy_precision,
+                order="F",
             )
             self.bench.product(self.source_signal, self.res)
