@@ -64,7 +64,7 @@ class CustomJSONizer(json.JSONEncoder):
         This is necessary, since numpy's booleans are not supported by json.dumps().
         """
         return (
-            super().encode(bool(obj))
+            bool(obj)  # super().encode(bool(obj))
             if isinstance(obj, np.bool_)
             else super().default(obj)
         )
