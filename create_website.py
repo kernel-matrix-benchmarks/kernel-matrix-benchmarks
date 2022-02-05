@@ -121,7 +121,7 @@ args = parser.parse_args()
 
 def get_lines(*, data, x_name, y_name, render_all_points):
     """For each algorithm run on a dataset, obtain its performance curve coords.
-    
+
     x_name, y_name are string identifiers for performance metrics,
     i.e. keys for the dict "all_metrics"
     defined in kernel_matrix_benchmarks/plotting/metrics.py.
@@ -271,14 +271,15 @@ def build_index_site(*, runs, j2_env, file_name="index.html"):
     with open(args.outputdir + file_name, "w") as text_file:
         text_file.write(
             j2_env.get_template("summary.html").render(
-                title="Kernel-Matrix-Benchmarks", runs=runs,
+                title="Kernel-Matrix-Benchmarks",
+                runs=runs,
             )
         )
 
 
 def load_all_results():
     """Read all result files and compute all metrics.
-    
+
     Returns a dict: all_runs = {
             "by_dataset" : {
                 "dataset-1": {

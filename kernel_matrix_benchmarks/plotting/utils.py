@@ -23,11 +23,11 @@ def create_pointset(*, data, x_name, y_name):
         y_name (string): name of the performance metric for the y axis.
 
     Returns:
-        dict of dict of lists: 
+        dict of dict of lists:
           points["front"]["x"], points["front"]["y"] and points["front"]["labels"]
           correspond to the Pareto front and
           points["all"]["x"], points["all"]["y"] and points["all"]["labels"]
-          correspond to all points outside of the x and y axes, 
+          correspond to all points outside of the x and y axes,
           sorted "from best to worst" value of y.
     """
     # Load the relevant "metrics" functions for the x and y axes.
@@ -42,8 +42,16 @@ def create_pointset(*, data, x_name, y_name):
     data.sort(key=lambda t: (rev_y * t[-1], rev_x * t[-2]))
 
     points = {
-        "front": {"x": [], "y": [], "labels": [],},
-        "all": {"x": [], "y": [], "labels": [],},
+        "front": {
+            "x": [],
+            "y": [],
+            "labels": [],
+        },
+        "all": {
+            "x": [],
+            "y": [],
+            "labels": [],
+        },
     }
     last_x = x_metric["worst"]
     comparator = (lambda xv, lx: xv > lx) if last_x < 0 else (lambda xv, lx: xv < lx)
@@ -148,7 +156,7 @@ def compute_all_metrics(*, dataset, run, properties, recompute=False):
 
     Returns:
         dict: {
-            "algo": algo tag as in algos.yaml, 
+            "algo": algo tag as in algos.yaml,
             "algo_name": attribute algo.name defined in the Python API,
             "metrics": {metric: value} dict.
             }

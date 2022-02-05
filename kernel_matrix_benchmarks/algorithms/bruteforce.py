@@ -8,12 +8,11 @@ from kernel_matrix_benchmarks.algorithms.base import BaseProduct, BaseSolver
 def inverse_square_root(sqdists):
     """Inefficient implementation of "rsqrt", which is not supported by NumPy."""
     sqdists_0 = np.maximum(sqdists, 0)
-    # Work-around to avoid divisions by zero:
-    mask = sqdists_0 < 1e-5
-    sqdists_0[mask] = 1
     res = 1 / np.sqrt(sqdists_0)
-    res[mask] = 0
-    return res
+    # Put zeroes on the diagonal:
+    buffer = res.reshape(-1)
+    buffer[:: res.shape[1] + 1] = 0
+    return buffer.reshape(res.shape)
 
 
 kernel_functions = {
@@ -23,27 +22,37 @@ kernel_functions = {
 }
 
 
-def kernel_matrix(*, kernel, source_points, target_points=None):
-    # Pre-compute the squared Euclidean norm of each point:
+def kernel_matrix(*, kernel, source_points, target_points=None, fast_sqdists=False):
+
     if target_points is None:
         target_points = source_points  # (N,D) = (M,D)
-        source_sqnorms = (source_points ** 2).sum(-1)  # (M,)
-        target_sqnorms = source_sqnorms  # (N,)
-
-    else:
-        source_sqnorms = (source_points ** 2).sum(-1)  # (M,)
-        target_sqnorms = (target_points ** 2).sum(-1)  # (N,)
 
     # Extract the shape of the data:
     M, D = source_points.shape
     N, _ = target_points.shape
 
-    #  Compute the matrix of squared distances with BLAS:
-    sqdists = (
-        target_sqnorms.reshape(N, 1)  # (N,1)
-        + source_sqnorms.reshape(1, M)  # (1,M)
-        - 2 * target_points @ source_points.T  # (N,D) @ (D,M) = (N,M)
-    )
+    if fast_sqdists:
+        # Pre-compute the squared Euclidean norm of each point:
+        source_sqnorms = (source_points**2).sum(-1)  # (M,)
+        if target_points is None:
+            target_sqnorms = source_sqnorms  # (N,)
+        else:
+            target_sqnorms = (target_points**2).sum(-1)  # (N,)
+
+        # Compute the matrix of squared distances with BLAS:
+        # N.B.: Due to floating point errors, sqdists may not always
+        #       be non-negative or zero when "x_i = y_j".
+        sqdists = (
+            target_sqnorms.reshape(N, 1)  # (N,1)
+            + source_sqnorms.reshape(1, M)  # (1,M)
+            - 2 * target_points @ source_points.T  # (N,D) @ (D,M) = (N,M)
+        )
+    else:
+        # Slow computation with a (N,M,D) memory buffer,
+        # but a guarantee of positivity:
+        diffs = target_points.reshape(N, 1, D) - source_points.reshape(1, M, D)
+        sqdists = np.sum(diffs**2, axis=-1)  # (N,M,D) -> (N,M)
+
     # Apply the kernel function pointwise:
     K_ij = kernel_functions[kernel](sqdists)  # (N,M)
     return K_ij
@@ -53,7 +62,13 @@ class BruteForceProductBLAS(BaseProduct):
     """Bruteforce implementation, using BLAS through NumPy."""
 
     def __init__(
-        self, *, kernel, dimension, normalize_rows=False, precision=np.float64
+        self,
+        *,
+        kernel,
+        dimension,
+        normalize_rows=False,
+        precision=np.float64,
+        fast_sqdists=False,
     ):
 
         # Save the kernel_name, dimension, precision type and normalize_rows boolean:
@@ -68,7 +83,8 @@ class BruteForceProductBLAS(BaseProduct):
             raise NotImplementedError(
                 f"BruteForceProductBLAS doesn't support kernel {kernel}."
             )
-        self.name = f"BruteForceProductBLAS({precision})"
+        self.fast_sqdists = fast_sqdists
+        self.name = f"BruteForceProductBLAS({precision}, fast_sqdists={fast_sqdists})"
 
     def prepare_data(
         self,
@@ -100,6 +116,7 @@ class BruteForceProductBLAS(BaseProduct):
             kernel=self.kernel,
             source_points=self.source_points,
             target_points=self.target_points,
+            fast_sqdists=self.fast_sqdists,
         )
 
     def prepare_query(self, *, source_signal):
@@ -138,12 +155,18 @@ class BruteForceProductBLAS(BaseProduct):
 
 class BruteForceSolverLAPACK(BaseSolver):
     """Bruteforce implementation, using LAPACK ?POSV through SciPy.
-    
+
     We assume that the kernel matrix is symmetric, positive definite.
     """
 
     def __init__(
-        self, *, kernel, dimension, normalize_rows=False, precision=np.float64
+        self,
+        *,
+        kernel,
+        dimension,
+        normalize_rows=False,
+        precision=np.float64,
+        fast_sqdists=False,
     ):
         # Save the kernel_name, dimension, precision type and normalize_rows boolean:
         super().__init__(
@@ -157,7 +180,8 @@ class BruteForceSolverLAPACK(BaseSolver):
             raise NotImplementedError(
                 f"BruteForceSolverLAPACK doesn't support kernel {kernel}."
             )
-        self.name = f"BruteForceSolverLAPACK({precision})"
+        self.fast_sqdists = fast_sqdists
+        self.name = f"BruteForceSolverLAPACK({precision}, fast_sqdists={fast_sqdists})"
 
     def prepare_data(self, *, source_points):
         """Casts data to the required precision."""
@@ -168,7 +192,11 @@ class BruteForceSolverLAPACK(BaseSolver):
 
     def fit(self):
         """Pre-computes the kernel matrix."""
-        self.K_ij = kernel_matrix(kernel=self.kernel, source_points=self.source_points)
+        self.K_ij = kernel_matrix(
+            kernel=self.kernel,
+            source_points=self.source_points,
+            fast_sqdists=self.fast_sqdists,
+        )
 
     def prepare_query(self, *, target_signal):
         # Cast to the required precision and as contiguous array for top performance:

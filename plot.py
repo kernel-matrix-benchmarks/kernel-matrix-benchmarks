@@ -25,7 +25,7 @@ from kernel_matrix_benchmarks.results import (
 
 def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyles):
     """Creates a .png file and save it at location 'fn_out'.
-    
+
     This routine is called using the command line, thanks to the API
     that is defined at the end of this file.
     """
@@ -91,7 +91,7 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
         loc=legend_location,
         prop={"size": 9},  # bbox_to_anchor=(1, 0.5)
     )
-    plt.grid(b=True, which="major", color="0.65", linestyle="-")
+    plt.grid(visible=True, which="major", color="0.65", linestyle="-")
     plt.setp(ax.get_xminorticklabels(), visible=True)
 
     if "lim" in x_metric:
@@ -108,7 +108,11 @@ def create_plot(*, data, raw, x_scale, y_scale, x_name, y_name, fn_out, linestyl
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", metavar="DATASET", default="glove-25-angular")
+    parser.add_argument(
+        "--dataset",
+        metavar="DATASET",
+        default="product-sphere-D3-E1-M1000-N1000-inverse-distance",
+    )
     parser.add_argument(
         "--definitions",
         metavar="FILE",
@@ -178,7 +182,7 @@ if __name__ == "__main__":
         raise Exception("Nothing to plot")
 
     create_plot(
-        all_data=runs,
+        data=runs,
         raw=args.raw,
         x_scale=args.x_scale,
         y_scale=args.y_scale,

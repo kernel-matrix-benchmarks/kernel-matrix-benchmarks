@@ -26,7 +26,7 @@
                         ]},
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true, 
+                            maintainAspectRatio: false, 
                             title:{
                                 display:true,
                                 text: '{{ plot_label }}'

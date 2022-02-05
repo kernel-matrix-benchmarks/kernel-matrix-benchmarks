@@ -201,7 +201,7 @@ def uniform_sphere(
     n_points=1000,
     dimension=3,
     radius=1,
-    kernel="gaussian",
+    kernel="inverse-distance",
     task="product",
     normalize_rows=False,
 ):
@@ -228,6 +228,46 @@ def uniform_sphere(
             kernel=kernel,
             short_description=f"sphere (N={n_points}, D={dimension})",
             description=f"{task.capitalize()} on the sphere, {kernel} (N={n_points}, D={dimension})",
+            source_points=source_points,
+            target_points=None,  # == source_points
+            source_signal=source_signal,
+            point_type="float",
+            normalize_rows=normalize_rows,
+        )
+
+    return write_to
+
+
+# Synthetic test case: uniform sample in a hypercube ------------------------------
+
+
+def uniform_cube(
+    n_points=1000,
+    dimension=3,
+    radius=1,
+    kernel="gaussian",
+    task="product",
+    normalize_rows=False,
+):
+    def write_to(filename):
+        # Set the seed for reproducible results:
+        numpy.random.seed(n_points + dimension)
+
+        # Generate the source point cloud as a uniform sample:
+        source_points = numpy.random.rand(n_points, dimension)
+        # Rescale the point cloud by the desired radius:
+        source_points = radius * source_points
+
+        # Generate source signal:
+        source_signal = numpy.random.randn(n_points, 1)
+
+        # Compute the ground truth output signal and save to file:
+        write_output(
+            filename=filename,
+            task=task,
+            kernel=kernel,
+            short_description=f"cube (N={n_points}, D={dimension})",
+            description=f"{task.capitalize()} on the cube, {kernel} (N={n_points}, D={dimension})",
             source_points=source_points,
             target_points=None,  # == source_points
             source_signal=source_signal,
@@ -350,9 +390,28 @@ SOLVER_SPHERE = {
 }
 
 
+# Kernel product on the 3D cube:
+PRODUCT_CUBE = {
+    f"product-cube-D3-E1-M{n}-N{n}-gaussian": uniform_sphere(
+        n_points=n, dimension=3, radius=1, task="product", kernel="gaussian"
+    )
+    for n in [1000, 2000, 5000, 10000]
+}
+
+# Kernel solver on the 3D cube:
+SOLVER_CUBE = {
+    f"solver-cube-D3-E1-M{n}-N{n}-gaussian": uniform_sphere(
+        n_points=n, dimension=3, radius=1, task="solver", kernel="gaussian"
+    )
+    for n in [1000, 2000, 5000, 10000]
+}
+
+
 DATASETS = {
     **PRODUCT_SPHERE,
     **SOLVER_SPHERE,
+    **PRODUCT_CUBE,
+    **SOLVER_CUBE,
     # "mnist-784-euclidean": mnist,
     # "fashion-mnist-784-euclidean": fashion_mnist,
     # "glove-25-angular": lambda out_fn: glove(out_fn, 25),

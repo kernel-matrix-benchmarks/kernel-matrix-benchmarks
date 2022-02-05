@@ -13,13 +13,13 @@ class BaseAlgorithm(object):
         Args:
             kernel (str):
                 The kernel function that is expected to be used on the dataset.
-            normalize_rows (bool, optional): 
-                Should we normalize the rows of the kernel matrix so that 
-                they sum up to 1? 
+            normalize_rows (bool, optional):
+                Should we normalize the rows of the kernel matrix so that
+                they sum up to 1?
                 Defaults to False.
-            precision (numpy dtype, optional): 
-                Desired precision level of the computation. Note that the output 
-                array will always be cast as a float64 NumPy array. 
+            precision (numpy dtype, optional):
+                Desired precision level of the computation. Note that the output
+                array will always be cast as a float64 NumPy array.
                 Defaults to np.float64.
         """
         self.kernel = kernel
@@ -69,10 +69,10 @@ class BaseProduct(BaseAlgorithm):
         Args:
             source_points ((M,D) array): the reference point cloud.
             target_points ((N,D) array): query points.
-            same_points (bool): 
+            same_points (bool):
                 Should we assume that the target point cloud is equal to the source?
                 Defaults to False.
-            density_estimation (bool): 
+            density_estimation (bool):
                 Should we assume that the source signal is equal to 1?
                 Defaults to False.
         """
@@ -84,14 +84,14 @@ class BaseProduct(BaseAlgorithm):
 
     def prepare_query(self, *, source_signal):
         """Reformat or recasts the input target points, outside of the timer.
-        
-        To ensure a fair benchmark, we may need to 
+
+        To ensure a fair benchmark, we may need to
         e.g. load queries on the GPU or change the numerical precision.
 
         Args:
             source_signal ((M,E) array or None): the reference signal.
-                Note that if self.density_estimation=None, the algorithm may assume 
-                that E=1 and that the source signal is uniformly equal to 1, 
+                Note that if self.density_estimation=None, the algorithm may assume
+                that E=1 and that the source signal is uniformly equal to 1,
                 i.e. we perform kernel density estimation.
         """
         pass
@@ -138,10 +138,10 @@ class BaseSolver(BaseAlgorithm):
 
     def prepare_query(self, *, target_signal):
         """Reformat or recasts the input target signal, outside of the timer.
-        
-        To ensure a fair benchmark, we may need to 
+
+        To ensure a fair benchmark, we may need to
         e.g. load the signal on the GPU or change the numerical precision.
-        
+
         Args:
             target_signal ((N,E) array): output of the kernel matrix product.
         """
@@ -165,4 +165,3 @@ class BaseSolver(BaseAlgorithm):
             (M,E) array: output of the computation at the M points y_j.
         """
         return np.ascontiguousarray(self.res, dtype=np.float64)
-

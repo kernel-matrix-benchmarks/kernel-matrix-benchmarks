@@ -35,4 +35,3 @@ class DummySolver(BaseSolver):
 
     def query(self):
         self.res = np.random.randn(self.n_points, self.output_dim)
-

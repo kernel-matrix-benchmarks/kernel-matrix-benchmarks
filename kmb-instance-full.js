@@ -22,7 +22,7 @@
       "DeviceName": "/dev/sda1",
       "Ebs": {
         "DeleteOnTermination": false, // Just in case we want to inspect things
-        "VolumeSize": 20, // 20Gb storage space
+        "VolumeSize": 100, // 100Gb storage space
         "VolumeType": "gp2"
       }
     }

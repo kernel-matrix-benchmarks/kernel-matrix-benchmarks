@@ -117,7 +117,7 @@ nicealgorithm:
   # so don't be too greedy ;-)
 
 dummy-product:
-  disabled: false
+  disabled: true
   hardware: CPU
   product: true
   docker-tag: kernel-matrix-benchmarks-sklearn
@@ -130,7 +130,7 @@ dummy-product:
         - "*" # Match all experiments
 
 dummy-solver:
-  disabled: false
+  disabled: true
   hardware: CPU
   solver: true
   docker-tag: kernel-matrix-benchmarks-sklearn
@@ -154,9 +154,12 @@ bruteforce-product-blas:
       datasets:
         - "*" # Match all experiments
       args:
-        - { "precision": "float16" }
-        - { "precision": "float32" }
-        - { "precision": "float64" }
+        - { "fast_sqdists": false, "precision": "float16" }
+        - { "fast_sqdists": false, "precision": "float32" }
+        - { "fast_sqdists": false, "precision": "float64" }
+        - { "fast_sqdists": true, "precision": "float16" }
+        - { "fast_sqdists": true, "precision": "float32" }
+        - { "fast_sqdists": true, "precision": "float64" }
 
 bruteforce-solver-blas:
   disabled: false
@@ -170,6 +173,74 @@ bruteforce-solver-blas:
       datasets:
         - "*" # Match all experiments
       args:
-        - { "precision": "float16" }
-        - { "precision": "float32" }
-        - { "precision": "float64" }
+        - { "fast_sqdists": false, "precision": "float16" }
+        - { "fast_sqdists": false, "precision": "float32" }
+        - { "fast_sqdists": false, "precision": "float64" }
+        - { "fast_sqdists": true, "precision": "float16" }
+        - { "fast_sqdists": true, "precision": "float32" }
+        - { "fast_sqdists": true, "precision": "float64" }
+
+htool-product:
+  disabled: false
+  hardware: CPU
+  product: true
+  attention: false
+  solver: false
+  docker-tag: kernel-matrix-benchmarks-htool
+  module: kernel_matrix_benchmarks.algorithms.htool
+  constructor: HtoolProduct
+  run-groups:
+    numerical-precision:
+      datasets:
+        - "*" # Match all experiments
+      args:
+        # Dense
+        - {
+            "eta": -100,
+            "epsilon": 0.001,
+            "source_minclustersize": 1000,
+            "symmetry": "N",
+            "UPLO": "N",
+            "precision": "Double",
+          }
+        - {
+            "eta": -100,
+            "epsilon": 0.001,
+            "source_minclustersize": 1000,
+            "symmetry": "N",
+            "UPLO": "N",
+            "precision": "Single",
+          }
+          # Compressed
+        - {
+            "eta": 100,
+            "epsilon": 0.00001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Double",
+          }
+        - {
+            "eta": 100,
+            "epsilon": 0.00001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Single",
+          }
+        - {
+            "eta": 100,
+            "epsilon": 0.001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Double",
+          }
+        - {
+            "eta": 100,
+            "epsilon": 0.001,
+            "source_minclustersize": 100,
+            "symmetry": "S",
+            "UPLO": "L",
+            "precision": "Single",
+          }
