@@ -244,3 +244,33 @@ htool-product:
             "UPLO": "L",
             "precision": "Single",
           }
+
+hmatrices-product:
+  disabled: false
+  hardware: CPU
+  product: true
+  attention: false
+  solver: false
+  docker-tag: kernel-matrix-benchmarks-hmatrices
+  module: kernel_matrix_benchmarks.algorithms.hmatrices
+  constructor: HMatricesProduct
+  run-groups:
+    numerical-precision:
+      datasets:
+        - "*" # Match all experiments
+      args:
+        # Compressed
+        - {
+            "eta": 3,
+            "epsilon": 0.001,
+            "maxleafsize": 100,
+            "precision": "Double",
+          }
+        # - {
+        #     "eta": 3,
+        #     "epsilon": 0.001,
+        #     "source_minclustersize": 100,
+        #     "symmetry": "S",
+        #     "UPLO": "L",
+        #     "precision": "Single",
+        #   }
