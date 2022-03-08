@@ -266,11 +266,9 @@ hmatrices-product:
             "maxleafsize": 100,
             "precision": "Double",
           }
-        # - {
-        #     "eta": 3,
-        #     "epsilon": 0.001,
-        #     "source_minclustersize": 100,
-        #     "symmetry": "S",
-        #     "UPLO": "L",
-        #     "precision": "Single",
-        #   }
+        - {
+            "eta": 3,
+            "epsilon": 0.001,
+            "maxleafsize": 100,
+            "precision": "Single",
+          }
