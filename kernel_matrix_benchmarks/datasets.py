@@ -73,6 +73,7 @@ import h5py
 import numpy
 import os
 import random
+import math
 
 from urllib.request import urlopen
 from urllib.request import urlretrieve
@@ -196,27 +197,32 @@ def write_output(
 
 # Synthetic test case: uniform sample on a sphere ------------------------------
 
-
 def uniform_sphere(
     n_points=1000,
-    dimension=3,
+    dimension=3, 
     radius=1,
     kernel="inverse-distance",
     task="product",
     normalize_rows=False,
 ):
     def write_to(filename):
-        # Set the seed for reproducible results:
-        numpy.random.seed(n_points + dimension)
+        # "Uniform" points on a sphere (see https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere)
+        source_points = numpy.zeros((n_points,dimension))
+        phi           = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
 
-        # Generate the source point cloud as a uniform sample on the sphere
-        # (isotropic Gaussian sample followed by a normalization):
-        source_points = numpy.random.randn(n_points, dimension)
-        norms = numpy.linalg.norm(source_points, 2, -1)
-        norms[norms == 0] = 1
-        source_points = source_points / norms.reshape(n_points, 1)
-        # Rescale the point cloud by the desired radius:
-        source_points = radius * source_points
+        for i in range(n_points):
+
+            y  = 1 - (i / float(n_points - 1)) * 2  # y goes from 1 to -1
+            ry = math.sqrt(1 - y * y)  # radius at y
+
+            theta = phi * i  # golden angle increment
+
+            x = math.cos(theta) * ry
+            z = math.sin(theta) * ry
+            print(i,x,y,z,radius)
+            source_points[i,0] = radius*x
+            source_points[i,1] = radius*y
+            source_points[i,2] = radius*z
 
         # Generate source signal:
         source_signal = numpy.random.randn(n_points, 1)
@@ -239,8 +245,6 @@ def uniform_sphere(
 
 
 # Synthetic test case: uniform sample in a hypercube ------------------------------
-
-
 def uniform_cube(
     n_points=1000,
     dimension=3,
@@ -278,9 +282,12 @@ def uniform_cube(
     return write_to
 
 
+# TODO: add a realistic distribution using gmsh. We can use gmsh's python API to
+# create a point cloud for the A319 example here
+# (https://gitlab.onelab.info/gmsh/gmsh/-/tree/master/benchmarks/brep). 
+
 # TODO: GloVE and MNIST should be updated
 # GloVE 25, 50, 100 and 200 ----------------------------------------------------
-
 
 def train_test_split(X, test_size=10000, dimension=None):
     import sklearn.model_selection
@@ -291,7 +298,6 @@ def train_test_split(X, test_size=10000, dimension=None):
     return sklearn.model_selection.train_test_split(
         X, test_size=test_size, random_state=1
     )
-
 
 def glove(out_fn, d):
     import zipfile
