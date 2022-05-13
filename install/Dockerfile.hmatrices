@@ -1,0 +1,13 @@
+FROM kernel-matrix-benchmarks
+RUN apt-get update \
+    && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    wget ca-certificates git python3 python3-pip \
+    && wget https://julialang-s3.julialang.org/bin/linux/x64/1.7/julia-1.7.2-linux-x86_64.tar.gz \
+    && tar zxvf julia-1.7.2-linux-x86_64.tar.gz \
+    && export PATH="$PATH:${PWD}/julia-1.7.2/bin" \
+    && julia -e 'using Pkg; Pkg.add(url="https://github.com/maltezfaria/KernelMatrixBenchmarks.git")' \
+    && rm julia-1.7.2-linux-x86_64.tar.gz \
+    && pip3 --no-cache-dir install juliacall\
+    && python3 -c "import juliacall" \
+    && rm -rf /var/lib/apt/lists/*
+RUN python3 -c 'import juliacall; from juliacall import Main as jl; jl.seval("using KernelMatrixBenchmarks")'
