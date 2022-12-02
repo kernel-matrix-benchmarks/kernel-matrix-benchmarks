@@ -217,7 +217,7 @@ To add support for a new algorithm, please:
 1. Write a small Python wrapper for your algorithm in
    [kernel_matrix_benchmarks/algorithms](kernel_matrix_benchmarks/algorithms).
    The full API is detailed in [base.py](kernel_matrix_benchmarks/algorithms/base.py)
-   and you may look at our [bruteforce implementation]((kernel_matrix_benchmarks/algorithms/bruteforce.py))
+   and you may look at our [bruteforce implementation](kernel_matrix_benchmarks/algorithms/bruteforce.py)
    for reference.
    Feel free to read the other wrappers to see how to interface Python
    with a Julia or a C++ library, load CUDA drivers, etc.
